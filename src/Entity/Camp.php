@@ -20,34 +20,33 @@ class Camp
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    #[Groups(['camp:read'])]
+    #[Groups(['camp:read', 'role:read'])]
     private ?int $id = null;
 
     #[ORM\Column(length: 100)]
-    #[Groups(['camp:read'])]
+    #[Groups(['camp:read', 'role:read'])]
     private ?string $name = null;
 
     #[ORM\Column(length: 20, nullable: true)]
-    #[Groups(['camp:read'])]
+    #[Groups(['camp:read', 'role:read'])]
     private ?string $color = null;
 
     #[ORM\Column(length: 50, nullable: true)]
-    #[Groups(['camp:read'])]
+    #[Groups(['camp:read', 'role:read'])]
     private ?string $emojiName = null;
 
     #[ORM\Column(length: 50, nullable: true)]
-    #[Groups(['camp:read'])]
+    #[Groups(['camp:read', 'role:read'])]
     private ?string $emojiId = null;
 
     #[ORM\Column(type: Types::TEXT, nullable: true)]
-    #[Groups(['camp:read'])]
+    #[Groups(['camp:read', 'role:read'])]
     private ?string $description = null;
 
     /**
      * @var Collection<int, Role>
      */
     #[ORM\OneToMany(targetEntity: Role::class, mappedBy: 'camp', orphanRemoval: true)]
-    #[Groups(['camp:read'])]
     private Collection $roles;
 
     public function __construct()

@@ -18,40 +18,39 @@ class Power
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    #[Groups(['power:read'])]
+    #[Groups(['power:read', 'role:read'])]
     private ?int $id = null;
 
     #[ORM\Column(length: 100)]
-    #[Groups(['power:read', 'power:write'])]
+    #[Groups(['power:read', 'power:write', 'role:read', 'role:write'])]
     private ?string $title = null;
     
     #[ORM\Column(type: Types::TEXT)]
-    #[Groups(['power:read', 'power:write'])]
+    #[Groups(['power:read', 'power:write', 'role:read', 'role:write'])]
     private ?string $description = null;
     
     #[ORM\Column]
-    #[Groups(['power:read', 'power:write'])]
+    #[Groups(['power:read', 'power:write', 'role:read', 'role:write'])]
     private ?bool $isDayPower = false;
     
     #[ORM\Column]
-    #[Groups(['power:read', 'power:write'])]
+    #[Groups(['power:read', 'power:write', 'role:read', 'role:write'])]
     private ?bool $isPassive = false;
     
     #[ORM\Column(nullable: true)]
-    #[Groups(['power:read', 'power:write'])]
+    #[Groups(['power:read', 'power:write', 'role:read', 'role:write'])]
     private ?int $usageLimit = null;
     
     #[ORM\Column]
-    #[Groups(['power:read', 'power:write'])]
+    #[Groups(['power:read', 'power:write', 'role:read', 'role:write'])]
     private ?int $position = null;
     
     #[ORM\Column]
-    #[Groups(['power:read', 'power:write'])]
+    #[Groups(['power:read', 'power:write', 'role:read', 'role:write'])]
     private ?bool $leavingHouse = false;
     
     #[ORM\ManyToOne(inversedBy: 'powers')]
     #[ORM\JoinColumn(nullable: false)]
-    #[Groups(['power:read', 'power:write'])]
     private ?Role $role = null;
 
     public function getId(): ?int

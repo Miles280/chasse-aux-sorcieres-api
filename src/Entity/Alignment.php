@@ -19,11 +19,11 @@ class Alignment
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    #[Groups(['alignment:read'])]
+    #[Groups(['alignment:read', 'role:read'])]
     private ?int $id = null;
 
     #[ORM\Column(length: 50)]
-    #[Groups(['alignment:read', 'alignment:write'])]
+    #[Groups(['alignment:read', 'role:read'])]
     private ?string $name = null;
 
     /**

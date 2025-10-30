@@ -18,11 +18,11 @@ class Goal
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    #[Groups(['goal:read'])]
+    #[Groups(['goal:read', 'role:read'])]
     private ?int $id = null;
 
     #[ORM\Column(type: Types::TEXT)]
-    #[Groups(['goal:read', 'goal:write'])]
+    #[Groups(['goal:read', 'goal:write', 'role:read', 'role:write'])]
     private ?string $objective = null;
 
     public function getId(): ?int

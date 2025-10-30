@@ -17,25 +17,25 @@ class Inventory
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    #[Groups(['alignment:read'])]
+    #[Groups(['inventory:read'])]
     private ?int $id = null;
 
     #[ORM\Column]
-    #[Groups(['alignment:read', 'alignment:write'])]
+    #[Groups(['inventory:read', 'inventory:write'])]
     private ?int $quantity = null;
 
     #[ORM\Column]
-    #[Groups(['alignment:read'])]
+    #[Groups(['inventory:read'])]
     private ?\DateTimeImmutable $acquiredAt = null;
 
     #[ORM\ManyToOne(inversedBy: 'inventories')]
     #[ORM\JoinColumn(nullable: false)]
-    #[Groups(['alignment:read', 'alignment:write'])]
+    #[Groups(['inventory:read', 'inventory:write'])]
     private ?User $owner = null;
 
     #[ORM\ManyToOne]
     #[ORM\JoinColumn(nullable: false)]
-    #[Groups(['alignment:read', 'alignment:write'])]
+    #[Groups(['inventory:read', 'inventory:write'])]
     private ?Shop $item = null;
 
     public function getId(): ?int

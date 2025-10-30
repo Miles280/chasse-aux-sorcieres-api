@@ -20,36 +20,36 @@ class Transaction
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    #[Groups(['transaction:read'])]
+    #[Groups(['transaction:read','user:read'])]
     private ?int $id = null;
 
     #[ORM\Column(enumType: TransactionType::class)]
-    #[Groups(['transaction:read', 'transaction:write'])]
+    #[Groups(['transaction:read', 'transaction:write','user:read'])]
     private ?TransactionType $type = null;
 
     #[ORM\Column(enumType: Currency::class)]
-    #[Groups(['transaction:read', 'transaction:write'])]
+    #[Groups(['transaction:read', 'transaction:write','user:read'])]
     private ?Currency $currency = null;
 
     #[ORM\Column]
-    #[Groups(['transaction:read', 'transaction:write'])]
+    #[Groups(['transaction:read', 'transaction:write','user:read'])]
     private ?int $amount = null;
 
     #[ORM\Column(type: Types::TEXT, nullable: true)]
-    #[Groups(['transaction:read', 'transaction:write'])]
+    #[Groups(['transaction:read', 'transaction:write','user:read'])]
     private ?string $description = null;
 
     #[ORM\Column]
-    #[Groups(['transaction:read'])]
+    #[Groups(['transaction:read','user:read'])]
     private ?\DateTimeImmutable $createdAt = null;
 
     #[ORM\ManyToOne(inversedBy: 'transactions')]
     #[ORM\JoinColumn(nullable: false)]
-    #[Groups(['transaction:read', 'transaction:write'])]
+    #[Groups(['transaction:read', 'transaction:write','user:read'])]
     private ?User $owner = null;
 
     #[ORM\ManyToOne]
-    #[Groups(['transaction:read', 'transaction:write'])]
+    #[Groups(['transaction:read', 'transaction:write','user:read'])]
     private ?User $relatedUser = null;
 
     public function getId(): ?int

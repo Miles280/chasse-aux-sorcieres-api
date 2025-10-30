@@ -1,0 +1,211 @@
+{
+  "Camp": [
+    {
+      "id": 1,
+      "name": "Villageois",
+      "color": "#27e9b5",
+      "emojiName": "🧑‍🌾",
+      "emojiId": null,
+      "description": "Les habitants du village, unis pour chasser les forces du mal."
+    },
+    {
+      "id": 2,
+      "name": "Sorcières",
+      "color": "#8b00ff",
+      "emojiName": "🧙‍♀️",
+      "emojiId": null,
+      "description": "Les sorcières se cachent parmi les vivants et sèment la mort la nuit."
+    },
+    {
+      "id": 3,
+      "name": "Indépendants",
+      "color": "#f0a500",
+      "emojiName": "🦊",
+      "emojiId": null,
+      "description": "Des êtres solitaires poursuivant leurs propres objectifs."
+    }
+  ],
+  "Alignment": [
+    { "id": 1, "name": "Informateur" },
+    { "id": 2, "name": "Protecteur" },
+    { "id": 3, "name": "Tueur" },
+    { "id": 4, "name": "Support" },
+    { "id": 5, "name": "Meneur" }
+  ],
+  "Goal": [
+    {
+      "id": 1,
+      "objective": "Survivre jusqu’à la fin de la partie, peu importe le camp vainqueur."
+    },
+    {
+      "id": 2,
+      "objective": "Être la dernière entité en vie dans le village."
+    },
+    {
+      "id": 3,
+      "objective": "Faire en sorte que tous les rôles spécifiques soient éliminés."
+    }
+  ],
+  "Role": [
+    {
+      "id": 1,
+      "name": "Voyante",
+      "description": "Chaque nuit, la voyante peut découvrir le camp d’un joueur.",
+      "minPlayer": 8,
+      "camp": "/api/camps/1",
+      "goal": null,
+      "alignment": ["/api/alignments/1", "/api/alignments/5"],
+      "powers": ["/api/powers/1"]
+    },
+    {
+      "id": 2,
+      "name": "Chasseur",
+      "description": "S’il meurt, le chasseur peut tuer un joueur de son choix avant de partir.",
+      "minPlayer": 8,
+      "camp": "/api/camps/1",
+      "goal": null,
+      "alignment": ["/api/alignments/3"],
+      "powers": ["/api/powers/2"]
+    },
+    {
+      "id": 3,
+      "name": "Sorcière",
+      "description": "Possède une potion de vie et une potion de mort. Peut sauver ou tuer chaque nuit.",
+      "minPlayer": 8,
+      "camp": "/api/camps/2",
+      "goal": null,
+      "alignment": ["/api/alignments/4", "/api/alignments/3"],
+      "powers": ["/api/powers/3", "/api/powers/4"]
+    },
+    {
+      "id": 4,
+      "name": "Chef du village",
+      "description": "Élu par les vivants, son vote compte double.",
+      "minPlayer": 6,
+      "camp": "/api/camps/1",
+      "goal": null,
+      "alignment": ["/api/alignments/5"],
+      "powers": ["/api/powers/5"]
+    },
+    {
+      "id": 5,
+      "name": "Loup solitaire",
+      "description": "N’appartient à aucun camp, il doit être le dernier en vie.",
+      "minPlayer": 8,
+      "camp": "/api/camps/3",
+      "goal": "/api/goals/2",
+      "alignment": ["/api/alignments/3"],
+      "powers": ["/api/powers/6"]
+    },
+    {
+      "id": 6,
+      "name": "Espion",
+      "description": "Peut écouter les discussions nocturnes des sorcières sans qu’elles ne le sachent.",
+      "minPlayer": 9,
+      "camp": "/api/camps/3",
+      "goal": "/api/goals/1",
+      "alignment": ["/api/alignments/1"],
+      "powers": ["/api/powers/7"]
+    },
+    {
+      "id": 7,
+      "name": "Protecteur",
+      "description": "Protège un joueur chaque nuit contre toute attaque.",
+      "minPlayer": 7,
+      "camp": "/api/camps/1",
+      "goal": null,
+      "alignment": ["/api/alignments/2"],
+      "powers": ["/api/powers/8"]
+    }
+  ],
+  "Power": [
+    {
+      "id": 1,
+      "title": "Vision nocturne",
+      "description": "Permet de connaître le camp d’un joueur par nuit.",
+      "isDayPower": false,
+      "isPassive": false,
+      "usageLimit": null,
+      "position": 1,
+      "leavingHouse": false,
+      "role": "/api/roles/1"
+    },
+    {
+      "id": 2,
+      "title": "Tir mortel",
+      "description": "Lors de sa mort, peut tirer sur un joueur avant de quitter le jeu.",
+      "isDayPower": true,
+      "isPassive": false,
+      "usageLimit": 1,
+      "position": 1,
+      "leavingHouse": false,
+      "role": "/api/roles/2"
+    },
+    {
+      "id": 3,
+      "title": "Potion de vie",
+      "description": "Peut sauver une personne attaquée dans la nuit.",
+      "isDayPower": false,
+      "isPassive": false,
+      "usageLimit": 1,
+      "position": 1,
+      "leavingHouse": true,
+      "role": "/api/roles/3"
+    },
+    {
+      "id": 4,
+      "title": "Potion de mort",
+      "description": "Peut tuer une personne pendant la nuit.",
+      "isDayPower": false,
+      "isPassive": false,
+      "usageLimit": 1,
+      "position": 2,
+      "leavingHouse": true,
+      "role": "/api/roles/3"
+    },
+    {
+      "id": 5,
+      "title": "Vote renforcé",
+      "description": "Son vote compte pour deux pendant le jour.",
+      "isDayPower": true,
+      "isPassive": true,
+      "usageLimit": null,
+      "position": 1,
+      "leavingHouse": false,
+      "role": "/api/roles/4"
+    },
+    {
+      "id": 6,
+      "title": "Traque nocturne",
+      "description": "Peut attaquer un joueur chaque nuit, mais devient visible après deux meurtres.",
+      "isDayPower": false,
+      "isPassive": false,
+      "usageLimit": null,
+      "position": 1,
+      "leavingHouse": true,
+      "role": "/api/roles/5"
+    },
+    {
+      "id": 7,
+      "title": "Oreilles de l’ombre",
+      "description": "Peut entendre une fois par nuit la discussion des sorcières.",
+      "isDayPower": false,
+      "isPassive": false,
+      "usageLimit": 3,
+      "position": 1,
+      "leavingHouse": false,
+      "role": "/api/roles/6"
+    },
+    {
+      "id": 8,
+      "title": "Protection nocturne",
+      "description": "Choisit un joueur à protéger pendant la nuit contre les attaques.",
+      "isDayPower": false,
+      "isPassive": false,
+      "usageLimit": null,
+      "position": 1,
+      "leavingHouse": true,
+      "role": "/api/roles/7"
+    }
+  ]
+}

@@ -8,6 +8,7 @@ use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use ApiPlatform\Metadata\ApiResource;
+use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Component\Serializer\Annotation\Groups;
 
 #[ORM\Entity(repositoryClass: UserRepository::class)]
@@ -16,7 +17,7 @@ use Symfony\Component\Serializer\Annotation\Groups;
     denormalizationContext: ['groups' => ['user:write']],
 )]
 #[ORM\Table(name: '`user`')]
-class User
+class User implements UserInterface
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
@@ -71,6 +72,10 @@ class User
     #[ORM\Column(nullable: true)]
     #[Groups(['user:read'])]
     private ?\DateTime $lastLoginAt = null;
+
+    #[ORM\Column(type: Types::JSON)]
+    #[Groups(['user:read', 'user:write'])]
+    private array $roles = [];
 
     /**
      * @var Collection<int, Transaction>
@@ -241,6 +246,22 @@ class User
         return $this;
     }
 
+    public function getRoles(): array
+    {
+        $roles = $this->roles;
+        // Tous les utilisateurs ont au moins ce rôle
+        $roles[] = 'ROLE_USER';
+
+        return array_unique($roles);
+    }
+
+    public function setRoles(array $roles): static
+    {
+        $this->roles = $roles;
+        return $this;
+    }
+
+
     /**
      * @return Collection<int, Transaction>
      */
@@ -300,4 +321,17 @@ class User
 
         return $this;
     }
+
+        public function getUserIdentifier(): string
+    {
+        // Identifiant unique de l'utilisateur
+        return $this->discordId ?? (string) $this->id;
+    }
+
+    public function eraseCredentials(): void
+    {
+        // Cette méthode sert à effacer d'éventuelles données sensibles
+        // (comme un mot de passe en clair). Ici, tu n’en as pas besoin.
+    }
+
 }

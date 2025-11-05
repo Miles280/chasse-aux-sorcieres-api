@@ -45,11 +45,11 @@ class Transaction
 
     #[ORM\ManyToOne(inversedBy: 'transactions')]
     #[ORM\JoinColumn(nullable: false)]
-    #[Groups(['transaction:read', 'transaction:write','user:read'])]
+    #[Groups(['transaction:read', 'transaction:write'])]
     private ?User $owner = null;
 
     #[ORM\ManyToOne]
-    #[Groups(['transaction:read', 'transaction:write','user:read'])]
+    #[Groups(['transaction:read', 'transaction:write'])]
     private ?User $relatedUser = null;
 
     public function getId(): ?int

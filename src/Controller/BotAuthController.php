@@ -1,6 +1,7 @@
 <?php
 namespace App\Controller;
 
+use App\Entity\User;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -9,6 +10,7 @@ use App\Repository\UserRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Routing\Annotation\Route;
 
+#[Route('/bot/auth')]
 class BotAuthController extends AbstractController
 {
     private $userRepo;
@@ -22,10 +24,10 @@ class BotAuthController extends AbstractController
         $this->em = $em;
     }
 
-    #[Route('/api/bot/login', name: 'bot_login', methods: ['POST'])]
+    #[Route('/login', name: 'app_bot_login', methods: ['POST'])]
     public function login(Request $request): JsonResponse
     {
-        $key = $request->headers->get('X-BOT-KEY');
+        $key = $request->headers->get('BOT-SECRET-KEY');
         if (!$key || $key !== $_ENV['BOT_SECRET_KEY']) {
             return $this->json(['error' => 'Unauthorized'], 401);
         }
@@ -35,7 +37,7 @@ class BotAuthController extends AbstractController
         $user = $this->userRepo->findOneBy(['discordId' => $botDiscordId]);
         if (!$user) {
             // crée un user "machine" minimal si absent
-            $user = new \App\Entity\User();
+            $user = new User();
             $user->setDiscordId($botDiscordId);
             $user->setCreatedAt(new \DateTimeImmutable());
             $user->setRoles(['ROLE_BOT']);

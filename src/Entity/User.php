@@ -8,6 +8,8 @@ use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use ApiPlatform\Metadata\ApiResource;
+use DateTime;
+use DateTimeImmutable;
 use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Component\Serializer\Annotation\Groups;
 
@@ -75,7 +77,7 @@ class User implements UserInterface
 
     #[ORM\Column(type: Types::JSON)]
     #[Groups(['user:read', 'user:write'])]
-    private array $roles = [];
+    private array $roles = ['ROLE_USER'];
 
     /**
      * @var Collection<int, Transaction>
@@ -95,6 +97,7 @@ class User implements UserInterface
     {
         $this->transactions = new ArrayCollection();
         $this->inventories = new ArrayCollection();
+        $this->createdAt = new DateTimeImmutable();
     }
 
     public function getId(): ?int

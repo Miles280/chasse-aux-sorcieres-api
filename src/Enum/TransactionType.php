@@ -5,6 +5,7 @@ namespace App\Enum;
 enum TransactionType: string
 {
     case GAIN = 'gain';
+    case LOSE = 'lose';
     case PURCHASE = 'purchase';
     case DONATION = 'donation';
     case RECEIPT = 'receipt';

@@ -57,12 +57,12 @@ class Transaction
         return $this->id;
     }
 
-    public function getType(): ?string
+    public function getType(): ?TransactionType
     {
         return $this->type;
     }
 
-    public function setType(TransactionType $type): static
+    public function setType(TransactionType $type): self
     {
         $this->type = $type;
 

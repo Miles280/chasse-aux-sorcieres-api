@@ -8,6 +8,9 @@ use App\Enum\Currency;
 use App\Enum\TransactionType;
 use App\Repository\TransactionRepository;
 use App\Repository\UserRepository;
+use App\Service\DiscordUserService;
+use App\Service\EconomyService;
+use App\Service\RequestPayloadService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -20,12 +23,16 @@ final class BotEconomyController extends AbstractController
     private UserRepository $userRepository;
     private TransactionRepository $transactionRepository;
     private EntityManagerInterface $em;
+    private EconomyService $economyService;
+    private DiscordUserService $discordUserService;
 
-    public function __construct(UserRepository $userRepository, TransactionRepository $transactionRepository, EntityManagerInterface $em)
+    public function __construct(UserRepository $userRepository, TransactionRepository $transactionRepository, EntityManagerInterface $em, EconomyService $economyService, DiscordUserService $discordUserService)
     {
         $this->userRepository = $userRepository;
         $this->transactionRepository = $transactionRepository;
         $this->em = $em;
+        $this->economyService = $economyService;
+        $this->discordUserService = $discordUserService;
     }
 
 
@@ -33,16 +40,7 @@ final class BotEconomyController extends AbstractController
     public function view(string $discordId): JsonResponse
     {
         // Récupération en base de données de l'utilisateur demandé  
-        $user = $this->userRepository->findOneBy(['discordId' => $discordId]);
-
-        // Création de l'utilisateur en base de données s'il n'existe pas déjà
-        if (!$user) {
-            $user = new User();
-            $user->setDiscordId($discordId);
-
-            $this->em->persist($user);
-            $this->em->flush();
-        }
+        $user = $this->discordUserService->findOrCreateUserByDiscordId($discordId);
 
         // Récupération des 5 dernières transactions de l'utilisateur
         $transactions = $this->transactionRepository->findBy(
@@ -73,39 +71,28 @@ final class BotEconomyController extends AbstractController
     }
 
     #[Route('/give', name: 'app_bot_give', methods: ['POST'])]
-    public function give(Request $request): JsonResponse
+    public function give(Request $request, RequestPayloadService $payloadService): JsonResponse
     {
-        // Extraction des données JSON envoyées par le bot
-        $payload = json_decode($request->getContent(), true);
-        $fromId   = $payload['from'] ?? null;
-        $toId     = $payload['to'] ?? null;
-        $currency = $payload['currency'] ?? null;
-        $amount   = $payload['amount'] ?? null;
+        // Extraction et validation des données JSON envoyées par le bot
+        $payload = $payloadService->extractValidatedPayload($request, ['senderId', 'receiverId', 'currency', 'amount']);
+        if ($payload instanceof JsonResponse) return $payload;
+        $senderId = $payload['senderId'];
+        $receiverId = $payload['receiverId'];
+        $currency = $payload['currency'];
+        $amount = $payload['amount'];
 
         // Vérifications de validité des données reçues
-        if (!$fromId || !$toId || !$currency || !$amount) {
-            return $this->json(['error' => 'Requête invalide : champs manquants.'], 400);
+        if ($error = $this->economyService->validateTransactionData($currency, $amount)) {
+            return $error; 
         }
 
-        if (!in_array($currency, ['gems', 'rubies'], true)) {
-            return $this->json(['error' => 'Monnaie invalide.'], 400);
-        }
-
-        if (!is_numeric($amount) || $amount <= 0) {
-            return $this->json(['error' => 'Le montant doit être un nombre positif.'], 400);
-        }
-
-        if ($fromId === $toId) {
+        if ($senderId === $receiverId) {
             return $this->json(['error' => 'Un utilisateur ne peut pas se donner de monnaie à lui-même.'], 400);
         }
 
         // Récupération des utilisateurs expéditeur et destinataire
-        $sender = $this->userRepository->findOneBy(['discordId' => $fromId]);
-        $receiver = $this->userRepository->findOneBy(['discordId' => $toId]);
-
-        if (!$sender || !$receiver) {
-            return $this->json(['error' => 'Utilisateur introuvable dans la base de données.'], 404);
-        }
+        $sender = $this->discordUserService->findOrCreateUserByDiscordId($senderId);
+        $receiver = $this->discordUserService->findOrCreateUserByDiscordId($receiverId);
 
         // Vérification du solde de l’expéditeur
         $senderBalance = $currency === 'gems' ? $sender->getGems() : $sender->getRubies();
@@ -113,7 +100,7 @@ final class BotEconomyController extends AbstractController
             return $this->json(['error' => 'Solde insuffisant.'], 400);
         }
 
-        // Mise à jour des soldes
+        // Mise à jour des soldes en fonction de la monnaie spécifiée
         if ($currency === 'gems') {
             $sender->setGems($sender->getGems() - $amount);
             $receiver->setGems($receiver->getGems() + $amount);
@@ -122,70 +109,37 @@ final class BotEconomyController extends AbstractController
             $receiver->setRubies($receiver->getRubies() + $amount);
         }
 
-        // Création de la transaction pour l'expéditeur
-        $transactionSender = new Transaction();
-        $transactionSender
-            ->setType(TransactionType::DONATION)
-            ->setCurrency(Currency::from($currency))
-            ->setAmount($amount)
-            ->setCreatedAt(new \DateTimeImmutable())
-            ->setOwner($sender)
-            ->setRelatedUser($receiver);
-
-        // Création de la transaction pour le destinataire
-        $transactionReceiver = new Transaction();
-        $transactionReceiver
-            ->setType(TransactionType::RECEIVE)
-            ->setCurrency(Currency::from($currency))
-            ->setAmount($amount)
-            ->setCreatedAt(new \DateTimeImmutable())
-            ->setOwner($receiver)
-            ->setRelatedUser($sender);
-
-        $this->em->persist($transactionSender);
-        $this->em->persist($transactionReceiver);
-        $this->em->persist($sender);
-        $this->em->persist($receiver);
-        $this->em->flush();
+        // Création des transactions pour le sender et le receiver
+        $this->economyService->createTransaction(TransactionType::DONATION, $currency, $amount, $sender, $receiver);
+        $this->economyService->createTransaction(TransactionType::RECEIVE, $currency, $amount, $receiver, $sender);
 
         return $this->json([
             'success' => true,
-            'new_balance' => [
+            'balance' => [
+                'discordId' => $sender->getDiscordId(),
                 'gems'   => $sender->getGems(),
                 'rubies' => $sender->getRubies(),
             ],
         ]);
     }
 
-
     #[Route('/add', name: 'app_bot_add', methods: ['POST'])]
-    public function add(Request $request): JsonResponse
+    public function add(Request $request, RequestPayloadService $payloadService): JsonResponse
     {   
-        // Extraction des données JSON envoyées par le bot
-        $payload = json_decode($request->getContent(), true);
-        $discordId = $payload['discordId'] ?? null;
-        $currency  = $payload['currency'] ?? null;
-        $amount    = $payload['amount'] ?? null;
+        // Extraction et validation des données JSON envoyées par le bot
+        $payload = $payloadService->extractValidatedPayload($request, ['discordId', 'currency', 'amount']);
+        if ($payload instanceof JsonResponse) return $payload;
+        $userId = $payload['discordId'];
+        $currency = $payload['currency'];
+        $amount = $payload['amount'];
 
         // Vérifications de validité des données reçues
-        if (!$discordId || !$currency || !$amount) {
-            return $this->json(['error' => 'Requête invalide : champs manquants.'], 400);
-        }
-
-        if (!in_array($currency, ['gems', 'rubies'], true)) {
-            return $this->json(['error' => 'Monnaie invalide.'], 400);
-        }
-
-        if (!is_numeric($amount) || $amount <= 0) {
-            return $this->json(['error' => 'Le montant doit être un nombre positif.'], 400);
+        if ($error = $this->economyService->validateTransactionData($currency, $amount)) {
+            return $error; 
         }
 
         // Récupération de l'utilisateur cible via son identifiant Discord
-        $user = $this->userRepository->findOneBy(['discordId' => $discordId]);
-
-        if (!$user) {
-            return $this->json(['error' => 'Utilisateur introuvable dans la base de données.'], 404);
-        }
+        $user = $this->discordUserService->findOrCreateUserByDiscordId($userId);
 
         // Mise à jour du solde en fonction de la monnaie spécifiée
         if ($currency === 'gems') {
@@ -195,21 +149,12 @@ final class BotEconomyController extends AbstractController
         }
 
         // Création de la transaction 
-        $transaction = new Transaction();
-        $transaction
-            ->setType(TransactionType::ADMIN)
-            ->setCurrency(Currency::from($currency))
-            ->setAmount($amount)
-            ->setCreatedAt(new \DateTimeImmutable())
-            ->setOwner($user);
-
-        $this->em->persist($transaction);
-        $this->em->persist($user);
-        $this->em->flush();
+        $this->economyService->createTransaction(TransactionType::ADMIN, $currency, $amount, $user);
 
         return $this->json([
             'success' => true,
-            'new_balance' => [
+            'balance' => [
+                'discordId' => $user->getDiscordId(),
                 'gems'   => $user->getGems(),
                 'rubies' => $user->getRubies(),
             ],
@@ -217,33 +162,22 @@ final class BotEconomyController extends AbstractController
     }
 
     #[Route('/remove', name: 'app_bot_remove', methods: ['POST'])]
-    public function remove(Request $request): JsonResponse
+    public function remove(Request $request, RequestPayloadService $payloadService): JsonResponse
     {
-        // Extraction des données JSON envoyées par le bot
-        $payload = json_decode($request->getContent(), true);
-        $discordId = $payload['discordId'] ?? null;
-        $currency  = $payload['currency'] ?? null;
-        $amount    = $payload['amount'] ?? null;
+        // Extraction et validation des données JSON envoyées par le bot
+        $payload = $payloadService->extractValidatedPayload($request, ['discordId', 'currency', 'amount']);
+        if ($payload instanceof JsonResponse) return $payload;
+        $userId = $payload['discordId'];
+        $currency = $payload['currency'];
+        $amount = $payload['amount'];
 
         // Vérifications de validité des données reçues
-        if (!$discordId || !$currency || !$amount) {
-            return $this->json(['error' => 'Requête invalide : champs manquants.'], 400);
-        }
-
-        if (!in_array($currency, ['gems', 'rubies'], true)) {
-            return $this->json(['error' => 'Monnaie invalide.'], 400);
-        }
-
-        if (!is_numeric($amount) || $amount <= 0) {
-            return $this->json(['error' => 'Le montant doit être un nombre positif.'], 400);
+        if ($error = $this->economyService->validateTransactionData($currency, $amount)) {
+            return $error; 
         }
 
         // Récupération de l'utilisateur cible via son identifiant Discord
-        $user = $this->userRepository->findOneBy(['discordId' => $discordId]);
-
-        if (!$user) {
-            return $this->json(['error' => 'Utilisateur introuvable dans la base de données.'], 404);
-        }
+        $user = $this->discordUserService->findOrCreateUserByDiscordId($userId);
 
         // Mise à jour du solde en fonction de la monnaie spécifiée
         if ($currency === 'gems') {
@@ -253,21 +187,12 @@ final class BotEconomyController extends AbstractController
         }
 
         // Création de la transaction 
-        $transaction = new Transaction();
-        $transaction
-            ->setType(TransactionType::ADMIN)
-            ->setCurrency(Currency::from($currency))
-            ->setAmount(-$amount)
-            ->setCreatedAt(new \DateTimeImmutable())
-            ->setOwner($user);
-
-        $this->em->persist($transaction);
-        $this->em->persist($user);
-        $this->em->flush();
+        $this->economyService->createTransaction(TransactionType::ADMIN, $currency, -$amount, $user);
 
         return $this->json([
             'success' => true,
-            'new_balance' => [
+            'balance' => [
+                'discordId' => $user->getDiscordId(),
                 'gems'   => $user->getGems(),
                 'rubies' => $user->getRubies(),
             ],
@@ -275,33 +200,22 @@ final class BotEconomyController extends AbstractController
     }
     
     #[Route('/set', name: 'app_bot_set', methods: ['POST'])]
-    public function set(Request $request): JsonResponse
+    public function set(Request $request, RequestPayloadService $payloadService): JsonResponse
     {
-        // Extraction des données JSON envoyées par le bot
-        $payload = json_decode($request->getContent(), true);
-        $discordId = $payload['discordId'] ?? null;
-        $currency  = $payload['currency'] ?? null;
-        $amount    = $payload['amount'] ?? null;
+        // Extraction et validation des données JSON envoyées par le bot
+        $payload = $payloadService->extractValidatedPayload($request, ['discordId', 'currency', 'amount']);
+        if ($payload instanceof JsonResponse) return $payload;
+        $userId = $payload['discordId'];
+        $currency = $payload['currency'];
+        $amount = $payload['amount'];
 
         // Vérifications de validité des données reçues
-        if (!$discordId || !$currency || !$amount) {
-            return $this->json(['error' => 'Requête invalide : champs manquants.'], 400);
-        }
-
-        if (!in_array($currency, ['gems', 'rubies'], true)) {
-            return $this->json(['error' => 'Monnaie invalide.'], 400);
-        }
-
-        if (!is_numeric($amount) || $amount <= 0) {
-            return $this->json(['error' => 'Le montant doit être un nombre positif.'], 400);
+        if ($error = $this->economyService->validateTransactionData($currency, $amount)) {
+            return $error; 
         }
 
         // Récupération de l'utilisateur cible via son identifiant Discord
-        $user = $this->userRepository->findOneBy(['discordId' => $discordId]);
-
-        if (!$user) {
-            return $this->json(['error' => 'Utilisateur introuvable dans la base de données.'], 404);
-        }
+        $user = $this->discordUserService->findOrCreateUserByDiscordId($userId);
 
         // Mise à jour du solde en fonction de la monnaie spécifiée
         if ($currency === 'gems') {
@@ -309,23 +223,14 @@ final class BotEconomyController extends AbstractController
         } else {
             $user->setRubies($amount);
         }
-        
-        // Création de la transaction 
-        $transaction = new Transaction();
-        $transaction
-            ->setType(TransactionType::SET)
-            ->setCurrency(Currency::from($currency))
-            ->setAmount($amount)
-            ->setCreatedAt(new \DateTimeImmutable())
-            ->setOwner($user);
 
-        $this->em->persist($transaction);
-        $this->em->persist($user);
-        $this->em->flush();
+        // Création de la transaction 
+        $this->economyService->createTransaction(TransactionType::SET, $currency, $amount, $user);
 
         return $this->json([
             'success' => true,
-            'new_balance' => [
+            'balance' => [
+                'discordId' => $user->getDiscordId(),
                 'gems'   => $user->getGems(),
                 'rubies' => $user->getRubies(),
             ],

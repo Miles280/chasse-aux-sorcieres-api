@@ -117,9 +117,11 @@ final class BotEconomyController extends AbstractController
 
         // Mise à jour des soldes en fonction de la monnaie spécifiée
         if ($currency === 'gems') {
+            $old = $sender->getGems();
             $sender->setGems($sender->getGems() - $amount);
             $receiver->setGems($receiver->getGems() + $amount);
         } else {
+            $old = $sender->getRubies();
             $sender->setRubies($sender->getRubies() - $amount);
             $receiver->setRubies($receiver->getRubies() + $amount);
         }
@@ -130,6 +132,7 @@ final class BotEconomyController extends AbstractController
 
         return $this->json([
             'success' => true,
+            'old' => $old,
             'balance' => [
                 'gems'   => $sender->getGems(),
                 'rubies' => $sender->getRubies(),
@@ -157,9 +160,11 @@ final class BotEconomyController extends AbstractController
 
         // Mise à jour du solde en fonction de la monnaie spécifiée
         if ($currency === 'gems') {
-            $user->setGems($user->getGems() + $amount);
+            $old = $user->getGems();
+            $user->setGems($old + $amount);
         } else {
-            $user->setRubies($user->getRubies() + $amount);
+            $old = $user->getRubies();
+            $user->setRubies($old + $amount);
         }
 
         // Création de la transaction 
@@ -167,6 +172,7 @@ final class BotEconomyController extends AbstractController
 
         return $this->json([
             'success' => true,
+            'old' => $old,
             'balance' => [
                 'gems'   => $user->getGems(),
                 'rubies' => $user->getRubies(),
@@ -194,9 +200,28 @@ final class BotEconomyController extends AbstractController
 
         // Mise à jour du solde en fonction de la monnaie spécifiée
         if ($currency === 'gems') {
-            $user->setGems($user->getGems() - $amount);
+            $old = $user->getGems();
+
+            if ($old < $amount) {
+                return $this->json([
+                    'success' => false,
+                    'error' => "Le membre spécifié n'a pas assez de Gemmes pour cette opération."
+                ], 400);
+            }
+
+            $user->setGems($old - $amount);
+
         } else {
-            $user->setRubies($user->getRubies() - $amount);
+            $old = $user->getRubies();
+
+            if ($old < $amount) {
+                return $this->json([
+                    'success' => false,
+                    'error' => "Le membre spécifié n'a pas assez de Rubis pour cette opération."
+                ], 400);
+            }
+
+            $user->setRubies($old - $amount);
         }
 
         // Création de la transaction 
@@ -204,6 +229,7 @@ final class BotEconomyController extends AbstractController
 
         return $this->json([
             'success' => true,
+            'old' => $old,
             'balance' => [
                 'gems'   => $user->getGems(),
                 'rubies' => $user->getRubies(),
@@ -231,8 +257,10 @@ final class BotEconomyController extends AbstractController
 
         // Mise à jour du solde en fonction de la monnaie spécifiée
         if ($currency === 'gems') {
+            $old = $user->getGems();
             $user->setGems($amount);
         } else {
+            $old = $user->getRubies();
             $user->setRubies($amount);
         }
 
@@ -241,6 +269,7 @@ final class BotEconomyController extends AbstractController
 
         return $this->json([
             'success' => true,
+            'old' => $old,
             'balance' => [
                 'gems'   => $user->getGems(),
                 'rubies' => $user->getRubies(),

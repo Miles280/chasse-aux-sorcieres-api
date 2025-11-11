@@ -45,11 +45,12 @@ class Transaction
     private ?\DateTimeImmutable $createdAt = null;
 
     #[ORM\ManyToOne(inversedBy: 'transactions')]
-    #[ORM\JoinColumn(nullable: false)]
+    #[ORM\JoinColumn(nullable: false, onDelete: "CASCADE")]
     #[Groups(['transaction:read', 'transaction:write'])]
     private ?User $owner = null;
 
     #[ORM\ManyToOne]
+    #[ORM\JoinColumn(nullable: true, onDelete: "SET NULL")]
     #[Groups(['transaction:read', 'transaction:write'])]
     private ?User $relatedUser = null;
 

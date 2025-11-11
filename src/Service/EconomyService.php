@@ -6,12 +6,16 @@ use App\Entity\Transaction;
 use App\Entity\User;
 use App\Enum\Currency;
 use App\Enum\TransactionType;
+use App\Repository\TransactionRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 
 class EconomyService
 {
-    public function __construct(private EntityManagerInterface $em) {}
+    public function __construct(
+        private EntityManagerInterface $em,
+        private TransactionRepository $transactionRepository
+    ) {}
     
     public function validateTransactionData(string $currency, $amount): ?JsonResponse
     {
@@ -48,4 +52,10 @@ class EconomyService
 
         return $transaction;
     }
+
+    public function getLastRubyDonation(User $user): ?Transaction
+    {
+        return $this->transactionRepository->findLastRubyDonation($user);
+    }
+
 }

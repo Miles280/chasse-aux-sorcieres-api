@@ -2,9 +2,6 @@
 
 namespace App\Controller;
 
-use App\Entity\Transaction;
-use App\Entity\User;
-use App\Enum\Currency;
 use App\Enum\TransactionType;
 use App\Repository\TransactionRepository;
 use App\Repository\UserRepository;
@@ -63,7 +60,6 @@ final class BotEconomyController extends AbstractController
         }, $transactions);
 
         return $this->json([
-            'discordId' => $user->getDiscordId(),
             'gems' => $user->getGems(),
             'rubies' => $user->getRubies(),
             'transactions' => $transactionsData
@@ -100,6 +96,25 @@ final class BotEconomyController extends AbstractController
             return $this->json(['error' => 'Solde insuffisant.'], 400);
         }
 
+        // Vérification du cooldown uniquement si la monnaie est "rubies"
+        if ($currency === 'rubies') {
+
+            $lastDonation = $this->economyService->getLastRubyDonation($sender);
+
+            if ($lastDonation !== null) {
+                $lastDate = $lastDonation->getCreatedAt();
+                $nextPossible = (clone $lastDate)->modify('+48 hours');
+
+                if (new \DateTime() < $nextPossible) {
+                    $timestamp = $nextPossible->getTimestamp();
+
+                    return $this->json([
+                        'error' => "Vous avez déjà donné des Rubis récemment.\n Vous pourrez en donner de nouveau <t:$timestamp:R> (à <t:$timestamp:t>)."
+                    ], 400);
+                }
+            }
+        }
+
         // Mise à jour des soldes en fonction de la monnaie spécifiée
         if ($currency === 'gems') {
             $sender->setGems($sender->getGems() - $amount);
@@ -116,7 +131,6 @@ final class BotEconomyController extends AbstractController
         return $this->json([
             'success' => true,
             'balance' => [
-                'discordId' => $sender->getDiscordId(),
                 'gems'   => $sender->getGems(),
                 'rubies' => $sender->getRubies(),
             ],
@@ -154,7 +168,6 @@ final class BotEconomyController extends AbstractController
         return $this->json([
             'success' => true,
             'balance' => [
-                'discordId' => $user->getDiscordId(),
                 'gems'   => $user->getGems(),
                 'rubies' => $user->getRubies(),
             ],
@@ -192,7 +205,6 @@ final class BotEconomyController extends AbstractController
         return $this->json([
             'success' => true,
             'balance' => [
-                'discordId' => $user->getDiscordId(),
                 'gems'   => $user->getGems(),
                 'rubies' => $user->getRubies(),
             ],
@@ -230,7 +242,6 @@ final class BotEconomyController extends AbstractController
         return $this->json([
             'success' => true,
             'balance' => [
-                'discordId' => $user->getDiscordId(),
                 'gems'   => $user->getGems(),
                 'rubies' => $user->getRubies(),
             ],

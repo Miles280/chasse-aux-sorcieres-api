@@ -8,7 +8,8 @@ enum TransactionType: string
     case LOSE = 'lose';
     case PURCHASE = 'purchase';
     case DONATION = 'donation';
-    case RECEIPT = 'receipt';
+    case RECEIVE = 'receive';
     case CONVERSION = 'conversion';
     case ADMIN = 'admin';
+    case SET = 'set';
 }

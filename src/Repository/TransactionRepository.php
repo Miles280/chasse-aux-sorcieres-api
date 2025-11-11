@@ -3,6 +3,8 @@
 namespace App\Repository;
 
 use App\Entity\Transaction;
+use App\Entity\User;
+use App\Enum\TransactionType;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -14,6 +16,21 @@ class TransactionRepository extends ServiceEntityRepository
     public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, Transaction::class);
+    }
+
+    public function findLastRubyDonation(User $user): ?Transaction
+    {
+        return $this->createQueryBuilder('t')
+            ->where('t.owner = :user')
+            ->andWhere('t.type = :type')
+            ->andWhere('t.currency = :currency')
+            ->setParameter('user', $user)
+            ->setParameter('type', TransactionType::DONATION)
+            ->setParameter('currency', 'rubies')
+            ->orderBy('t.createdAt', 'DESC')
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
     }
 
 //    /**

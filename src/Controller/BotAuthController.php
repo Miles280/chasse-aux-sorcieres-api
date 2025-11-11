@@ -39,7 +39,6 @@ class BotAuthController extends AbstractController
             // crée un user "machine" minimal si absent
             $user = new User();
             $user->setDiscordId($botDiscordId);
-            $user->setCreatedAt(new \DateTimeImmutable());
             $user->setRoles(['ROLE_BOT']);
 
             $this->em->persist($user);

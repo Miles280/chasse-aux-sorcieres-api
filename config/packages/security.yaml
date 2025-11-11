@@ -15,7 +15,7 @@ security:
 
     # 🔸 Firewall pour le BOT
     bot:
-      pattern: ^/api
+      pattern: ^/bot
       stateless: true
       provider: app_user_provider
       custom_authenticators:
@@ -29,8 +29,8 @@ security:
         - App\Security\DiscordOAuthAuthenticator
 
   access_control:
-    - { path: ^/api/bot/login, roles: PUBLIC_ACCESS }
-    - { path: ^/api/bot, roles: ROLE_BOT }
+    - { path: ^/bot/auth/login, roles: PUBLIC_ACCESS }
+    - { path: ^/bot, roles: ROLE_BOT }
     - { path: ^/api/auth/discord, roles: PUBLIC_ACCESS }
     - { path: ^/api, roles: IS_AUTHENTICATED_FULLY }
 

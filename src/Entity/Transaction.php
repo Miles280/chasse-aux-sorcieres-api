@@ -8,6 +8,7 @@ use App\Repository\TransactionRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use ApiPlatform\Metadata\ApiResource;
+use DateTimeImmutable;
 use Symfony\Component\Serializer\Annotation\Groups;
 
 #[ORM\Entity(repositoryClass: TransactionRepository::class)]
@@ -44,25 +45,31 @@ class Transaction
     private ?\DateTimeImmutable $createdAt = null;
 
     #[ORM\ManyToOne(inversedBy: 'transactions')]
-    #[ORM\JoinColumn(nullable: false)]
+    #[ORM\JoinColumn(nullable: false, onDelete: "CASCADE")]
     #[Groups(['transaction:read', 'transaction:write'])]
     private ?User $owner = null;
 
     #[ORM\ManyToOne]
+    #[ORM\JoinColumn(nullable: true, onDelete: "SET NULL")]
     #[Groups(['transaction:read', 'transaction:write'])]
     private ?User $relatedUser = null;
+
+    public function __construct()
+    {
+        $this->createdAt = new DateTimeImmutable();
+    }
 
     public function getId(): ?int
     {
         return $this->id;
     }
 
-    public function getType(): ?string
+    public function getType(): ?TransactionType
     {
         return $this->type;
     }
 
-    public function setType(TransactionType $type): static
+    public function setType(TransactionType $type): self
     {
         $this->type = $type;
 

@@ -246,7 +246,7 @@ final class BotEconomyController extends AbstractController
         ]);
     }
 
-    #[Route('/{discordId}/history', name: 'app_bot_transaction_history', methods: ['GET'])]
+    #[Route('/transactions/{discordId}', name: 'app_bot_transactions', methods: ['GET'])]
     public function history(string $discordId, Request $request): JsonResponse
     {
         // Récupération de l'utilisateur

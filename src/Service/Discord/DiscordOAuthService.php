@@ -51,4 +51,19 @@ class DiscordOAuthService
 
         return $response->toArray();
     }
+
+    public function refreshAccessToken(string $refreshToken): array
+    {
+        $response = $this->httpClient->request('POST', 'https://discord.com/api/oauth2/token', [
+            'headers' => ['Content-Type' => 'application/x-www-form-urlencoded'],
+            'body' => http_build_query([
+                'client_id' => $this->clientId,
+                'client_secret' => $this->clientSecret,
+                'grant_type' => 'refresh_token',
+                'refresh_token' => $refreshToken,
+            ]),
+        ]);
+
+        return $response->toArray();
+    }
 }

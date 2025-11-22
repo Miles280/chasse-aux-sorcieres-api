@@ -11,6 +11,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Annotation\Route;
 
+#[Route('/api/auth')]
 class DiscordController extends AbstractController
 {
     private DiscordOAuthService $discordService;
@@ -24,7 +25,7 @@ class DiscordController extends AbstractController
         $this->discordUserService = $discordUserService;
     }
 
-    #[Route('/api/auth/discord', name: 'auth_discord', methods: ['POST'])]
+    #[Route('/discord', name: 'auth_discord', methods: ['POST'])]
     public function auth(Request $request, RequestPayloadService $payloadService): JsonResponse
     {
         // Extraction et validation des données JSON envoyées par le bot
@@ -42,7 +43,6 @@ class DiscordController extends AbstractController
 
         // 2. Récupérer info utilisateur
         $userInfo = $this->discordService->getUserInfo($accessToken);
-        // return $this->json($userInfo);
         $discordId = $userInfo['id'] ?? null;
 
         if (!$discordId) {

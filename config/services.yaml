@@ -27,3 +27,6 @@ services:
       $clientId: "%env(DISCORD_CLIENT_ID)%"
       $clientSecret: "%env(DISCORD_CLIENT_SECRET)%"
       $redirectUri: "%env(DISCORD_REDIRECT_URI)%"
+  App\Service\Discord\DiscordGuildService:
+    arguments:
+      $guildId: "%env(DISCORD_GUILD_ID)%"

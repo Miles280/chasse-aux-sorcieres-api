@@ -10,6 +10,7 @@ class DiscordUserManager
 {
     public function __construct(
         private UserRepository $userRepository,
+        private DiscordRoleSyncService $roleSync,
         private EntityManagerInterface $em
     ) {}
 
@@ -44,7 +45,8 @@ class DiscordUserManager
         $user->setDiscordGlobalName($discordUser['global_name'] ?? null);
         $user->setDiscordAvatar($discordUser['avatar'] ?? null);
         $user->setEmail($discordUser['email'] ?? null);
-
+        $this->roleSync->syncUserRoles($user);
+        
         $user->setLastLoginAt(new \DateTime());
 
         $this->em->flush();

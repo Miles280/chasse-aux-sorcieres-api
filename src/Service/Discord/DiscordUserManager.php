@@ -32,9 +32,9 @@ class DiscordUserManager
     public function updateUserFromDiscord(User $user, array $discordUser, array $tokenData): User
     {
         // Infos du token
-        $user->setAccessToken($tokenData['access_token'] ?? null);
-        $user->setRefreshToken($tokenData['refresh_token'] ?? null);
-        $user->setTokenExpiresAt(
+        $user->setDiscordAccessToken($tokenData['access_token'] ?? null);
+        $user->setDiscordRefreshToken($tokenData['refresh_token'] ?? null);
+        $user->setDiscordTokenExpiresAt(
             isset($tokenData['expires_in']) 
                 ? new \DateTime('+'.$tokenData['expires_in'].' seconds')
                 : null
@@ -53,4 +53,27 @@ class DiscordUserManager
 
         return $user;
     }
+
+    public function updateJwtTokens(User $user,string $refreshToken): User
+    {
+        // Infos du token
+        $user->setJwtRefreshToken($refreshToken);
+        $user->setJwtRefreshTokenExpiresAt(new \DateTime('+30 days'));
+
+        $this->em->flush();
+
+        return $user;
+    }
+
+    public function findUserByJwtRefreshToken(string $refreshToken): ?User
+    {
+        $user = $this->userRepository->findOneBy(['jwtRefreshToken' => $refreshToken]);
+
+        if (!$user) {
+            return null; 
+        }
+
+        return $user; 
+    }
+
 }

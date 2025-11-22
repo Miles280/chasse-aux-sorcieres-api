@@ -16,22 +16,22 @@ class DiscordController extends AbstractController
 {
     private DiscordOAuthService $discordService;
     private JWTTokenManagerInterface $jwtManager;
-    private DiscordUserManager $discordUserService;
+    private DiscordUserManager $discordUserManager;
 
-    public function __construct(DiscordOAuthService $discordService, JWTTokenManagerInterface $jwtManager, DiscordUserManager $discordUserService)
+    public function __construct(DiscordOAuthService $discordService, JWTTokenManagerInterface $jwtManager, DiscordUserManager $discordUserManager)
     {
         $this->discordService = $discordService;
         $this->jwtManager = $jwtManager;
-        $this->discordUserService = $discordUserService;
+        $this->discordUserManager = $discordUserManager;
     }
 
-    #[Route('/discord', name: 'auth_discord', methods: ['POST'])]
-    public function auth(Request $request, RequestPayloadService $payloadService): JsonResponse
+    #[Route('/login', name: 'app_auth_login', methods: ['POST'])]
+    public function login(Request $request, RequestPayloadService $payloadService): JsonResponse
     {
         // Extraction et validation des données JSON envoyées par le bot
         $payload = $payloadService->extractValidatedPayload($request, ['code']);
         if ($payload instanceof JsonResponse) return $payload;
-        $code = $payload['code'] ?? null;
+        $code = $payload['code'];
 
         // 1. Obtenir token Discord
         $tokenData = $this->discordService->getAccessToken($code);
@@ -50,12 +50,36 @@ class DiscordController extends AbstractController
         }
 
         // 3. Créer ou récupérer utilisateur en DB
-        $user = $this->discordUserService->findOrCreateUserByDiscordId($discordId);
-        $this->discordUserService->updateUserFromDiscord($user, $userInfo, $tokenData);
+        $user = $this->discordUserManager->findOrCreateUserByDiscordId($discordId);
+        $this->discordUserManager->updateUserFromDiscord($user, $userInfo, $tokenData);
+
+        $jwtRefreshToken = bin2hex(random_bytes(64));
+        $this->discordUserManager->updateJwtTokens($user, $jwtRefreshToken);
 
         // 4. Générer JWT
         $jwt = $this->jwtManager->create($user);
 
-        return $this->json(['token' => $jwt]);
+        return $this->json([
+            'token' => $jwt,
+            'refreshToken' => $jwtRefreshToken,
+        ]);
+    }
+
+    #[Route('/refresh', name: 'app_auth_refresh', methods: ['POST'])]
+    public function refresh(Request $request, RequestPayloadService $payloadService): JsonResponse
+    {
+        $payload = $payloadService->extractValidatedPayload($request, ['refreshToken']);
+        if ($payload instanceof JsonResponse) return $payload;
+        $refreshToken = $payload['refreshToken'];
+
+        $user = $this->discordUserManager->findUserByJwtRefreshToken($refreshToken);
+
+        $newJwt = $this->jwtManager->create($user);
+        $jwtRefreshToken = bin2hex(random_bytes(64));
+
+        return $this->json([
+            'token' => $newJwt,
+            'refreshToken' => $jwtRefreshToken,
+        ]);
     }
 }

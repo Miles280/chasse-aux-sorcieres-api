@@ -16,17 +16,17 @@ class DiscordRoleSyncService
     public function syncUserRoles(User $user): void
     {
         // 1. Refresh token si expiré
-        if (!$user->getTokenExpiresAt() || $user->getTokenExpiresAt() < new \DateTime()) {
-            if (!$user->getRefreshToken()) return;
-            $newTokens = $this->oauth->refreshAccessToken($user->getRefreshToken());
+        if (!$user->getDiscordTokenExpiresAt() || $user->getDiscordTokenExpiresAt() < new \DateTime()) {
+            if (!$user->getDiscordRefreshToken()) return;
+            $newTokens = $this->oauth->refreshAccessToken($user->getDiscordRefreshToken());
 
-            $user->setAccessToken($newTokens['access_token']);
-            $user->setRefreshToken($newTokens['refresh_token']);
-            $user->setTokenExpiresAt(new \DateTime('+'.$newTokens['expires_in'].' seconds'));
+            $user->setDiscordAccessToken($newTokens['access_token']);
+            $user->setDiscordRefreshToken($newTokens['refresh_token']);
+            $user->setDiscordTokenExpiresAt(new \DateTime('+'.$newTokens['expires_in'].' seconds'));
         }
 
         // 2. Rôles Discord
-        $member = $this->guild->getUserGuildMember($user->getAccessToken());
+        $member = $this->guild->getUserGuildMember($user->getDiscordAccessToken());
         $discordRoles = $member['roles'];
 
         // 3. Mapping

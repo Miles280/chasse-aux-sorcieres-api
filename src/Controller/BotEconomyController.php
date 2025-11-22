@@ -3,7 +3,7 @@
 namespace App\Controller;
 
 use App\Enum\TransactionType;
-use App\Service\DiscordUserService;
+use App\Service\Discord\DiscordUserManager;
 use App\Service\EconomyService;
 use App\Service\RequestPayloadService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -15,9 +15,9 @@ use Symfony\Component\Routing\Attribute\Route;
 final class BotEconomyController extends AbstractController
 {
     private EconomyService $economyService;
-    private DiscordUserService $discordUserService;
+    private DiscordUserManager $discordUserService;
 
-    public function __construct(EconomyService $economyService, DiscordUserService $discordUserService)
+    public function __construct(EconomyService $economyService, DiscordUserManager $discordUserService)
     {
         $this->economyService = $economyService;
         $this->discordUserService = $discordUserService;

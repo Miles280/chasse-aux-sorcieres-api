@@ -1,10 +1,10 @@
 <?php
 
-namespace App\Service;
+namespace App\Service\Discord;
 
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 
-class DiscordService
+class DiscordOAuthService
 {
     private string $clientId;
     private string $clientSecret;

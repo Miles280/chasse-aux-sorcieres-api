@@ -2,9 +2,9 @@
 
 namespace App\Controller\Auth;
 
-use App\Entity\User;
-use App\Service\DiscordService;
-use Doctrine\ORM\EntityManagerInterface;
+use App\Service\Discord\DiscordOAuthService;
+use App\Service\Discord\DiscordUserManager;
+use App\Service\RequestPayloadService;
 use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -13,38 +13,36 @@ use Symfony\Component\Routing\Annotation\Route;
 
 class DiscordController extends AbstractController
 {
-    private DiscordService $discordService;
-    private EntityManagerInterface $em;
+    private DiscordOAuthService $discordService;
     private JWTTokenManagerInterface $jwtManager;
+    private DiscordUserManager $discordUserService;
 
-    public function __construct(DiscordService $discordService, EntityManagerInterface $em, JWTTokenManagerInterface $jwtManager)
+    public function __construct(DiscordOAuthService $discordService, JWTTokenManagerInterface $jwtManager, DiscordUserManager $discordUserService)
     {
         $this->discordService = $discordService;
-        $this->em = $em;
         $this->jwtManager = $jwtManager;
+        $this->discordUserService = $discordUserService;
     }
 
     #[Route('/api/auth/discord', name: 'auth_discord', methods: ['POST'])]
-    public function auth(Request $request): JsonResponse
+    public function auth(Request $request, RequestPayloadService $payloadService): JsonResponse
     {
-        $data = json_decode($request->getContent(), true);
-        $code = $data['code'] ?? null;
-
-        if (!$code) {
-            return $this->json(['error' => 'Code missing'], 400);
-        }
+        // Extraction et validation des données JSON envoyées par le bot
+        $payload = $payloadService->extractValidatedPayload($request, ['code']);
+        if ($payload instanceof JsonResponse) return $payload;
+        $code = $payload['code'] ?? null;
 
         // 1. Obtenir token Discord
         $tokenData = $this->discordService->getAccessToken($code);
         $accessToken = $tokenData['access_token'] ?? null;
 
-        if (!$accessToken) {
-            return $this->json(['error' => 'Invalid access token'], 400);
+        if (!$tokenData) {
+            return $this->json(['error' => 'Token renvoyé par Discord manquant'], 400);
         }
 
         // 2. Récupérer info utilisateur
         $userInfo = $this->discordService->getUserInfo($accessToken);
-        return $this->json($userInfo);
+        // return $this->json($userInfo);
         $discordId = $userInfo['id'] ?? null;
 
         if (!$discordId) {
@@ -52,15 +50,8 @@ class DiscordController extends AbstractController
         }
 
         // 3. Créer ou récupérer utilisateur en DB
-        $user = $this->em->getRepository(User::class)->findOneBy(['discordId' => $discordId]);
-        if (!$user) {
-            $user = new User();
-            $user->setDiscordId($discordId);
-            $user->setDiscordUsername($userInfo['username'] ?? 'DiscordUser');
-            $user->setEmail($userInfo['email'] ?? null);
-            $this->em->persist($user);
-            $this->em->flush();
-        }
+        $user = $this->discordUserService->findOrCreateUserByDiscordId($discordId);
+        $this->discordUserService->updateUserFromDiscord($user, $userInfo, $tokenData);
 
         // 4. Générer JWT
         $jwt = $this->jwtManager->create($user);

@@ -3,7 +3,7 @@
 namespace App\Controller;
 
 use App\Enum\TransactionType;
-use App\Service\Discord\DiscordUserManager;
+use App\Service\Auth\DiscordUserManager;
 use App\Service\EconomyService;
 use App\Service\RequestPayloadService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;

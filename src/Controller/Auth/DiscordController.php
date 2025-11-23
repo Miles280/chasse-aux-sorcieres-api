@@ -2,8 +2,8 @@
 
 namespace App\Controller\Auth;
 
-use App\Service\Discord\DiscordOAuthService;
-use App\Service\Discord\DiscordUserManager;
+use App\Service\Auth\DiscordOAuthService;
+use App\Service\Auth\DiscordUserManager;
 use App\Service\RequestPayloadService;
 use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;

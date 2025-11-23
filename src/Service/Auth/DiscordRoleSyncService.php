@@ -1,6 +1,6 @@
 <?php 
 
-namespace App\Service\Discord;
+namespace App\Service\Auth;
 
 use App\Entity\User;
 use Doctrine\ORM\EntityManagerInterface;

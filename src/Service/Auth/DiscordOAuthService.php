@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Service\Discord;
+namespace App\Service\Auth;
 
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 

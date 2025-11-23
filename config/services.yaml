@@ -22,11 +22,11 @@ services:
 
   # add more service definitions when explicit configuration is needed
   # please note that last definitions always *replace* previous ones
-  App\Service\Discord\DiscordOAuthService:
+  App\Service\Auth\DiscordOAuthService:
     arguments:
       $clientId: "%env(DISCORD_CLIENT_ID)%"
       $clientSecret: "%env(DISCORD_CLIENT_SECRET)%"
       $redirectUri: "%env(DISCORD_REDIRECT_URI)%"
-  App\Service\Discord\DiscordGuildService:
+  App\Service\Auth\DiscordGuildService:
     arguments:
       $guildId: "%env(DISCORD_GUILD_ID)%"

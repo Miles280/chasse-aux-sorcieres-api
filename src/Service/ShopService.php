@@ -15,34 +15,37 @@ class ShopService
     ) {}
 
     /**
-     * Récupère les articles paginées de la boutique.
+     * Récupère les articles paginés de la boutique.
      */
     public function getShopArticles(int $page = 1, string $currency, int $limit = self::DEFAULT_PAGE_LIMIT): array
     {
-        $page = max(1, $page);
-        $offset = ($page - 1) * $limit;
-
+        // Compter les articles filtrés (pour éviter un total incorrect si currency est appliquée)
         $criteria = [];
         if ($currency) {
-            $criteria['currency'] = $currency; // filtre sur la colonne currency
+            $criteria['currency'] = $currency;
         }
+
+        $total = $this->shopRepository->count($criteria);
+        $maxPages = max(1, ceil($total / $limit));
+
+        // Forcer la page dans les limites
+        $page = max(1, min($page, $maxPages));
+
+        $offset = ($page - 1) * $limit;
 
         // Récupération paginée
         $articles = $this->shopRepository->findBy(
-            $criteria,                 // filtre
-            ['price' => 'ASC'],        // tri 
-            $limit,                    // Limite
-            $offset                    // Offset
+            $criteria,
+            ['price' => 'ASC'],
+            $limit,
+            $offset
         );
-
-        // Nombre total d'articles
-        $total = $this->shopRepository->count([]);
 
         return [
             'items' => $articles,
             'page' => $page,
             'total' => $total,
-            'pages' => ceil($total / $limit),
+            'pages' => $maxPages,
         ];
     }
 }

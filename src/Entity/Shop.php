@@ -9,6 +9,7 @@ use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use ApiPlatform\Metadata\ApiResource;
 use Symfony\Component\Serializer\Annotation\Groups;
+use Symfony\Component\Serializer\Annotation\MaxDepth;
 
 #[ORM\Entity(repositoryClass: ShopRepository::class)]
 #[ApiResource(
@@ -47,9 +48,22 @@ class Shop
     #[Groups(['shop:read', 'shop:write'])]
     private ?string $discordRoleId = null;
 
-    #[ORM\Column]
+    #[ORM\Column(nullable: true)]
     #[Groups(['shop:read', 'shop:write'])]
     private ?int $quantity = null;
+
+    #[ORM\ManyToOne(targetEntity: self::class)]
+    #[Groups(['shop:read', 'shop:write'])]
+    #[MaxDepth(1)]
+    private ?self $requiredItem = null;
+
+    #[ORM\Column(length: 50, nullable: true)]
+    #[Groups(['shop:read', 'shop:write'])]
+    private ?string $requiredRoleId = null;
+
+    #[ORM\Column]
+    #[Groups(['shop:read', 'shop:write'])]
+    private ?int $position = null;
 
     public function getId(): ?int
     {
@@ -133,9 +147,45 @@ class Shop
         return $this->quantity;
     }
 
-    public function setQuantity(int $quantity): static
+    public function setQuantity(?int $quantity): static
     {
         $this->quantity = $quantity;
+
+        return $this;
+    }
+
+    public function getRequiredItem(): ?self
+    {
+        return $this->requiredItem;
+    }
+
+    public function setRequiredItem(?self $requiredItem): static
+    {
+        $this->requiredItem = $requiredItem;
+
+        return $this;
+    }
+
+    public function getRequiredRoleId(): ?string
+    {
+        return $this->requiredRoleId;
+    }
+
+    public function setRequiredRoleId(?string $requiredRoleId): static
+    {
+        $this->requiredRoleId = $requiredRoleId;
+
+        return $this;
+    }
+
+    public function getPosition(): ?int
+    {
+        return $this->position;
+    }
+
+    public function setPosition(int $position): static
+    {
+        $this->position = $position;
 
         return $this;
     }

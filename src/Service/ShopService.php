@@ -4,14 +4,16 @@ namespace App\Service;
 
 use App\Repository\ShopRepository;
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
 
 class ShopService 
 {
-    private const DEFAULT_PAGE_LIMIT = 10;
+    private const DEFAULT_PAGE_LIMIT = 5;
 
     public function __construct(
         private EntityManagerInterface $em,
-        private ShopRepository $shopRepository
+        private ShopRepository $shopRepository,
+        private NormalizerInterface $normalizer
     ) {}
 
     /**
@@ -36,13 +38,19 @@ class ShopService
         // Récupération paginée
         $articles = $this->shopRepository->findBy(
             $criteria,
-            ['price' => 'ASC'],
+            ['position' => 'ASC', 'price' => 'ASC'],
             $limit,
             $offset
         );
 
+        $itemsNormalized = $this->normalizer->normalize(
+            $articles,
+            null,
+            ['groups' => ['shop:read']]
+        );
+
         return [
-            'items' => $articles,
+            'items' => $itemsNormalized,
             'page' => $page,
             'total' => $total,
             'pages' => $maxPages,

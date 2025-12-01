@@ -79,11 +79,11 @@ class ShopService
 
         // Vérifier que l'utilisateur a les fonds nécessaires
         if ($currency === 'gems' && $user->getGems() < $price) {
-            return ['error' => "Vous n'avez pas assez de gemmes."];
+            return ['error' => "Vous n'avez pas assez de gemmes pour acheter cet article."];
         }
 
         if ($currency === 'rubies' && $user->getRubies() < $price) {
-            return ['error' => "Vous n'avez pas assez de rubis."];
+            return ['error' => "Vous n'avez pas assez de rubis pour acheter cet article."];
         }
 
         // Vérifier que l'utilisateur n'a pas déjà atteint la limite d'achat
@@ -154,13 +154,7 @@ class ShopService
         $this->economyService->createTransaction(TransactionType::PURCHASE, $currency, $price, $user, null, $item->getName());
 
         return [
-            'message' => "Achat effectué avec succès !",
-            'item' => [
-                'id' => $item->getId(),
-                'name' => $item->getName(),
-                'currency' => $currency,
-                'price' => $price,
-            ]
+            'message' => "Achat de « __{$item->getName()}__ » effectué avec succès !",
         ];
     }
 }

@@ -2,7 +2,7 @@
 
 namespace App\Enum;
 
-enum ShopType: string
+enum ItemType: string
 {
     case ROLE = 'role';
     case ITEM = 'item';

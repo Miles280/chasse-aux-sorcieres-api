@@ -309,6 +309,16 @@ class User implements UserInterface
         return $this->inventories;
     }
 
+    public function getInventoryForItem(Item $item): ?Inventory
+    {
+        foreach ($this->getInventories() as $inventory) {
+            if ($inventory->getItem()->getId() === $item->getId()) {
+                return $inventory;
+            }
+        }
+        return null;
+    }
+
     public function addInventory(Inventory $inventory): static
     {
         if (!$this->inventories->contains($inventory)) {
@@ -329,6 +339,16 @@ class User implements UserInterface
         }
 
         return $this;
+    }
+
+    public function hasItem(Item $item): bool
+    {
+        foreach ($this->inventories as $inventory) {
+            if ($inventory->getItem()->getId() === $item->getId()) {
+                return true;
+            }
+        }
+        return false;
     }
 
         public function getUserIdentifier(): string

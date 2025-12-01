@@ -3,67 +3,70 @@
 namespace App\Entity;
 
 use App\Enum\Currency;
-use App\Enum\ShopType;
-use App\Repository\ShopRepository;
+use App\Enum\ItemType;
+use App\Repository\ItemRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use ApiPlatform\Metadata\ApiResource;
 use Symfony\Component\Serializer\Annotation\Groups;
 use Symfony\Component\Serializer\Annotation\MaxDepth;
 
-#[ORM\Entity(repositoryClass: ShopRepository::class)]
+#[ORM\Entity(repositoryClass: ItemRepository::class)]
 #[ApiResource(
-    normalizationContext: ['groups' => ['shop:read']],
-    denormalizationContext: ['groups' => ['shop:write']],
+    normalizationContext: ['groups' => ['item:read']],
+    denormalizationContext: ['groups' => ['item:write']],
 )]
-class Shop
+class Item
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    #[Groups(['shop:read'])]
+    #[Groups(['item:read'])]
     private ?int $id = null;
 
     #[ORM\Column(length: 100)]
-    #[Groups(['shop:read', 'shop:write'])]
+    #[Groups(['item:read', 'item:write'])]
     private ?string $name = null;
 
     #[ORM\Column(type: Types::TEXT, nullable: true)]
-    #[Groups(['shop:read', 'shop:write'])]
+    #[Groups(['item:read', 'item:write'])]
     private ?string $description = null;
 
     #[ORM\Column(enumType: Currency::class)]
-    #[Groups(['shop:read', 'shop:write'])]
+    #[Groups(['item:read', 'item:write'])]
     private ?Currency $currency = null;
 
     #[ORM\Column]
-    #[Groups(['shop:read', 'shop:write'])]
+    #[Groups(['item:read', 'item:write'])]
     private ?int $price = null;
 
-    #[ORM\Column(enumType: ShopType::class)]
-    #[Groups(['shop:read', 'shop:write'])]
-    private ?ShopType $type = null;
+    #[ORM\Column(enumType: ItemType::class)]
+    #[Groups(['item:read', 'item:write'])]
+    private ?ItemType $type = null;
 
     #[ORM\Column(length: 50, nullable: true)]
-    #[Groups(['shop:read', 'shop:write'])]
+    #[Groups(['item:read', 'item:write'])]
     private ?string $discordRoleId = null;
 
     #[ORM\Column(nullable: true)]
-    #[Groups(['shop:read', 'shop:write'])]
+    #[Groups(['item:read', 'item:write'])]
     private ?int $quantity = null;
 
     #[ORM\ManyToOne(targetEntity: self::class)]
-    #[Groups(['shop:read', 'shop:write'])]
+    #[Groups(['item:read', 'item:write'])]
     #[MaxDepth(1)]
     private ?self $requiredItem = null;
 
     #[ORM\Column(length: 50, nullable: true)]
-    #[Groups(['shop:read', 'shop:write'])]
+    #[Groups(['item:read', 'item:write'])]
     private ?string $requiredRoleId = null;
 
     #[ORM\Column]
-    #[Groups(['shop:read', 'shop:write'])]
+    #[Groups(['item:read', 'item:write'])]
     private ?int $position = null;
+
+    #[ORM\Column(nullable: true)]
+    private ?int $purchaseLimit = null;
 
     public function getId(): ?int
     {
@@ -118,12 +121,12 @@ class Shop
         return $this;
     }
 
-    public function getType(): ?ShopType
+    public function getType(): ?itemType
     {
         return $this->type;
     }
 
-    public function setType(ShopType $type): static
+    public function setType(itemType $type): static
     {
         $this->type = $type;
 
@@ -186,6 +189,18 @@ class Shop
     public function setPosition(int $position): static
     {
         $this->position = $position;
+
+        return $this;
+    }
+
+    public function getPurchaseLimit(): ?int
+    {
+        return $this->purchaseLimit;
+    }
+
+    public function setPurchaseLimit(?int $purchaseLimit): static
+    {
+        $this->purchaseLimit = $purchaseLimit;
 
         return $this;
     }

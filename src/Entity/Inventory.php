@@ -24,10 +24,6 @@ class Inventory
     #[Groups(['inventory:read', 'inventory:write'])]
     private ?int $quantity = null;
 
-    #[ORM\Column]
-    #[Groups(['inventory:read'])]
-    private ?\DateTimeImmutable $acquiredAt = null;
-
     #[ORM\ManyToOne(inversedBy: 'inventories')]
     #[ORM\JoinColumn(nullable: false)]
     #[Groups(['inventory:read', 'inventory:write'])]
@@ -36,7 +32,7 @@ class Inventory
     #[ORM\ManyToOne]
     #[ORM\JoinColumn(nullable: false)]
     #[Groups(['inventory:read', 'inventory:write'])]
-    private ?Shop $item = null;
+    private ?Item $item = null;
 
     public function getId(): ?int
     {
@@ -55,18 +51,6 @@ class Inventory
         return $this;
     }
 
-    public function getAcquiredAt(): ?\DateTimeImmutable
-    {
-        return $this->acquiredAt;
-    }
-
-    public function setAcquiredAt(\DateTimeImmutable $acquiredAt): static
-    {
-        $this->acquiredAt = $acquiredAt;
-
-        return $this;
-    }
-
     public function getOwner(): ?User
     {
         return $this->owner;
@@ -79,12 +63,12 @@ class Inventory
         return $this;
     }
 
-    public function getItem(): ?Shop
+    public function getItem(): ?Item
     {
         return $this->item;
     }
 
-    public function setItem(?Shop $item): static
+    public function setItem(?Item $item): static
     {
         $this->item = $item;
 

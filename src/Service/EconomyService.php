@@ -22,7 +22,7 @@ class EconomyService
     /**
      * Vérifie les données d'une transaction avant traitement.
      */
-    public function validateTransactionData(string $currency, $amount): ?JsonResponse
+    public function validateTransactionData(string $currency, int $amount): ?JsonResponse
     {
         if (!in_array($currency, ['gems', 'rubies'], true)) {
             return new JsonResponse(['error' => 'Monnaie invalide.'], 400);
@@ -43,7 +43,8 @@ class EconomyService
         string $currency,
         float $amount,
         User $owner,
-        ?User $relatedUser = null
+        ?User $relatedUser = null,
+        ?string $description = null
     ): Transaction {
         $transaction = new Transaction();
         $transaction
@@ -52,7 +53,8 @@ class EconomyService
             ->setAmount($amount)
             ->setCreatedAt(new \DateTimeImmutable())
             ->setOwner($owner)
-            ->setRelatedUser($relatedUser);
+            ->setRelatedUser($relatedUser)
+            ->setDescription($description);
 
         $this->em->persist($transaction);
         $this->em->flush();

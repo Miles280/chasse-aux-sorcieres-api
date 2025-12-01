@@ -23,7 +23,7 @@ final class BotEconomyController extends AbstractController
         $this->discordUserService = $discordUserService;
     }
 
-    #[Route('/{discordId}', name: 'app_bot_view', methods: ['GET'])]
+    #[Route('/{discordId}', name: 'app_bot_economy_view', methods: ['GET'])]
     public function view(string $discordId): JsonResponse
     {
         // Récupération du user
@@ -35,7 +35,7 @@ final class BotEconomyController extends AbstractController
         return $this->json($overview);
     }
 
-    #[Route('/give', name: 'app_bot_give', methods: ['POST'])]
+    #[Route('/give', name: 'app_bot_economy_give', methods: ['POST'])]
     public function give(Request $request, RequestPayloadService $payloadService): JsonResponse
     {
         // Extraction et validation des données JSON envoyées par le bot
@@ -109,7 +109,7 @@ final class BotEconomyController extends AbstractController
         ]);
     }
 
-    #[Route('/add', name: 'app_bot_add', methods: ['POST'])]
+    #[Route('/add', name: 'app_bot_economy_add', methods: ['POST'])]
     public function add(Request $request, RequestPayloadService $payloadService): JsonResponse
     {   
         // Extraction et validation des données JSON envoyées par le bot
@@ -149,7 +149,7 @@ final class BotEconomyController extends AbstractController
         ]);
     }
 
-    #[Route('/remove', name: 'app_bot_remove', methods: ['POST'])]
+    #[Route('/remove', name: 'app_bot_economy_remove', methods: ['POST'])]
     public function remove(Request $request, RequestPayloadService $payloadService): JsonResponse
     {
         // Extraction et validation des données JSON envoyées par le bot
@@ -206,7 +206,7 @@ final class BotEconomyController extends AbstractController
         ]);
     }
     
-    #[Route('/set', name: 'app_bot_set', methods: ['POST'])]
+    #[Route('/set', name: 'app_bot_economy_set', methods: ['POST'])]
     public function set(Request $request, RequestPayloadService $payloadService): JsonResponse
     {
         // Extraction et validation des données JSON envoyées par le bot
@@ -246,7 +246,7 @@ final class BotEconomyController extends AbstractController
         ]);
     }
 
-    #[Route('/transactions/{discordId}', name: 'app_bot_transactions', methods: ['GET'])]
+    #[Route('/transactions/{discordId}', name: 'app_bot_economy_transactions', methods: ['GET'])]
     public function history(string $discordId, Request $request): JsonResponse
     {
         // Récupération de l'utilisateur

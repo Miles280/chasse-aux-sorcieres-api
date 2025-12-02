@@ -217,7 +217,7 @@ final class BotEconomyController extends AbstractController
         $amount = $payload['amount'];
 
         // Vérifications de validité des données reçues
-        if ($error = $this->economyService->validateTransactionData($currency, $amount)) {
+        if ($error = $this->economyService->validateTransactionData($currency, $amount, true)) {
             return $error; 
         }
 

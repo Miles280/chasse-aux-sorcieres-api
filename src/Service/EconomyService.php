@@ -22,13 +22,16 @@ class EconomyService
     /**
      * Vérifie les données d'une transaction avant traitement.
      */
-    public function validateTransactionData(string $currency, int $amount): ?JsonResponse
+    public function validateTransactionData(string $currency, int $amount, ?bool $isSet = false): ?JsonResponse
     {
         if (!in_array($currency, ['gems', 'rubies'], true)) {
             return new JsonResponse(['error' => 'Monnaie invalide.'], 400);
         }
 
         if (!is_numeric($amount) || $amount <= 0) {
+            if ($isSet && $amount === 0) {
+                return null;
+            }
             return new JsonResponse(['error' => 'Le montant doit être un nombre positif.'], 400);
         }
 

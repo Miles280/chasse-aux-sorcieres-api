@@ -21,48 +21,48 @@ class Item
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    #[Groups(['item:read'])]
+    #[Groups(['item:read','inventory:read'])]
     private ?int $id = null;
 
     #[ORM\Column(length: 100)]
-    #[Groups(['item:read', 'item:write'])]
+    #[Groups(['item:read', 'item:write','inventory:read'])]
     private ?string $name = null;
 
     #[ORM\Column(type: Types::TEXT, nullable: true)]
-    #[Groups(['item:read', 'item:write'])]
+    #[Groups(['item:read', 'item:write','inventory:read'])]
     private ?string $description = null;
 
     #[ORM\Column(enumType: Currency::class)]
-    #[Groups(['item:read', 'item:write'])]
+    #[Groups(['item:read', 'item:write','inventory:read'])]
     private ?Currency $currency = null;
 
     #[ORM\Column]
-    #[Groups(['item:read', 'item:write'])]
+    #[Groups(['item:read', 'item:write','inventory:read'])]
     private ?int $price = null;
 
     #[ORM\Column(enumType: ItemType::class)]
-    #[Groups(['item:read', 'item:write'])]
+    #[Groups(['item:read', 'item:write','inventory:read'])]
     private ?ItemType $type = null;
 
     #[ORM\Column(length: 50, nullable: true)]
-    #[Groups(['item:read', 'item:write'])]
+    #[Groups(['item:read', 'item:write','inventory:read'])]
     private ?string $discordRoleId = null;
 
     #[ORM\Column(nullable: true)]
-    #[Groups(['item:read', 'item:write'])]
+    #[Groups(['item:read', 'item:write','inventory:read'])]
     private ?int $quantity = null;
 
     #[ORM\ManyToOne(targetEntity: self::class)]
-    #[Groups(['item:read', 'item:write'])]
+    #[Groups(['item:read', 'item:write','inventory:read'])]
     #[MaxDepth(1)]
     private ?self $requiredItem = null;
 
     #[ORM\Column(length: 50, nullable: true)]
-    #[Groups(['item:read', 'item:write'])]
+    #[Groups(['item:read', 'item:write','inventory:read'])]
     private ?string $requiredRoleId = null;
 
     #[ORM\Column]
-    #[Groups(['item:read', 'item:write'])]
+    #[Groups(['item:read', 'item:write','inventory:read'])]
     private ?int $position = null;
 
     #[ORM\Column(nullable: true)]

@@ -26,7 +26,7 @@ class Inventory
 
     #[ORM\ManyToOne(inversedBy: 'inventories')]
     #[ORM\JoinColumn(nullable: false)]
-    #[Groups(['inventory:read', 'inventory:write'])]
+    #[Groups(['inventory:write'])]
     private ?User $owner = null;
 
     #[ORM\ManyToOne]

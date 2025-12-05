@@ -4,28 +4,28 @@ namespace App\Controller;
 
 use App\Repository\ItemRepository;
 use App\Service\Auth\DiscordUserManager;
-use App\Service\EconomyService;
 use App\Service\RequestPayloadService;
 use App\Service\ShopService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
 
 #[Route('/bot/shop')]
 final class BotShopController extends AbstractController
 {
     private ShopService $shopService;
-    private EconomyService $economyService;
     private DiscordUserManager $discordUserService;
     private ItemRepository $itemRepository;
+    private NormalizerInterface $normalizer;
 
-    public function __construct(ShopService $shopService, EconomyService $economyService, DiscordUserManager $discordUserService, ItemRepository $itemRepository)
+    public function __construct(ShopService $shopService, DiscordUserManager $discordUserService, ItemRepository $itemRepository, NormalizerInterface $normalizer)
     {
         $this->shopService = $shopService;
-        $this->economyService = $economyService;
         $this->discordUserService = $discordUserService;
         $this->itemRepository = $itemRepository;
+        $this->normalizer = $normalizer;
     }
 
     #[Route('/view', name: 'app_bot_shop_view', methods: ['GET'])]
@@ -45,6 +45,7 @@ final class BotShopController extends AbstractController
     {
         // Extraction et validation des données JSON envoyées par le bot
         $payload = $payloadService->extractValidatedPayload($request, ['discordId', 'itemId']);
+        if ($payload instanceof JsonResponse) return $payload;
 
         $user = $this->discordUserService->findOrCreateUserByDiscordId($payload['discordId']);
         $item = $this->itemRepository->find($payload['itemId']);
@@ -57,6 +58,30 @@ final class BotShopController extends AbstractController
 
         // Achat de l'article
         $result = $this->shopService->buyArticle($user, $item);
+
+        return $this->json($result);
+    }
+
+    #[Route('/detail', name: 'app_bot_shop_detail', methods: ['POST'])]
+    public function detail(Request $request, RequestPayloadService $payloadService): JsonResponse
+    {
+        // Extraction et validation des données JSON envoyées par le bot
+        $payload = $payloadService->extractValidatedPayload($request, ['itemId']);
+        if ($payload instanceof JsonResponse) return $payload;
+
+        $item = $this->itemRepository->find($payload['itemId']);
+
+        if (!$item) {
+            return $this->json([
+                'error' => 'Item introuvable.'
+            ], 404);
+        }
+
+        $result = $this->normalizer->normalize(
+            $item,
+            null,
+            ['groups' => ['item:read']]
+        );
 
         return $this->json($result);
     }

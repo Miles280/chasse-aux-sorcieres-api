@@ -148,7 +148,6 @@ class ShopService
             $this->em->persist($inventory);
         }
 
-        // 🔥 TRÈS IMPORTANT : ENREGISTRE TOUT !
         $this->em->flush();
         
         $this->economyService->createTransaction(TransactionType::PURCHASE, $currency, $price, $user, null, $item->getName());

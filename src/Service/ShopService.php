@@ -24,7 +24,7 @@ class ShopService
     /**
      * Récupère les articles paginés de la boutique.
      */
-    public function getArticles(int $page = 1, string $currency, int $limit = self::DEFAULT_PAGE_LIMIT): array
+    public function getArticlesByCurrency(int $page = 1, string $currency, int $limit = self::DEFAULT_PAGE_LIMIT): array
     {
         // Compter les articles filtrés (pour éviter un total incorrect si currency est appliquée)
         $criteria = [];
@@ -59,6 +59,18 @@ class ShopService
             'page' => $page,
             'total' => $total,
             'pages' => $maxPages,
+        ];
+    }
+
+    /**
+     * Récupère tous les articles articles de la boutique.
+     */
+    public function getAllArticles(): array
+    {
+        $articles = $this->itemRepository->findAll();
+
+        return [
+            'items' => $articles
         ];
     }
 

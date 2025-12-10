@@ -35,7 +35,15 @@ final class BotShopController extends AbstractController
         $page = max(1, (int) $request->query->get('page', 1));
         $currency = $request->query->get('currency');
 
-        $articles = $this->shopService->getArticles($page, $currency);
+        $articles = $this->shopService->getArticlesByCurrency($page, $currency);
+
+        return $this->json($articles);
+    }
+
+    #[Route('/viewall', name: 'app_bot_shop_viewall', methods: ['GET'])]
+    public function viewAll(Request $request): JsonResponse
+    {
+        $articles = $this->shopService->getAllArticles();
 
         return $this->json($articles);
     }

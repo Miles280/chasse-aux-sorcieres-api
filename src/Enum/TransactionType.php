@@ -6,10 +6,13 @@ enum TransactionType: string
 {
     case GAIN = 'gain';
     case LOSE = 'lose';
-    case PURCHASE = 'purchase';
     case DONATION = 'donation';
     case RECEIVE = 'receive';
+    case ADD = 'add';
+    case REMOVE = 'remove';
+    case PURCHASE = 'purchase';
+    case SELL = 'sell';
+    case SET = 'set';
     case CONVERSION = 'conversion';
     case ADMIN = 'admin';
-    case SET = 'set';
 }

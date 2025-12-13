@@ -14,5 +14,4 @@ enum TransactionType: string
     case SELL = 'sell';
     case SET = 'set';
     case CONVERSION = 'conversion';
-    case ADMIN = 'admin';
 }

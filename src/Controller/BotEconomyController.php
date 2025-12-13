@@ -137,7 +137,7 @@ final class BotEconomyController extends AbstractController
         }
 
         // Création de la transaction 
-        $this->economyService->createTransaction(TransactionType::ADMIN, $currency, $amount, $user);
+        $this->economyService->createTransaction(TransactionType::ADD, $currency, $amount, $user);
 
         return $this->json([
             'success' => true,
@@ -194,7 +194,7 @@ final class BotEconomyController extends AbstractController
         }
 
         // Création de la transaction 
-        $this->economyService->createTransaction(TransactionType::ADMIN, $currency, -$amount, $user);
+        $this->economyService->createTransaction(TransactionType::REMOVE, $currency, $amount, $user);
 
         return $this->json([
             'success' => true,

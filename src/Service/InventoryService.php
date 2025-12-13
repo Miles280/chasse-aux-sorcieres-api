@@ -124,7 +124,7 @@ class InventoryService
         );
 
         return [
-            'message' => "Vente de « __{$item->getName()}__ » à <@{$buyer->getDiscordId()}> effectuée.",
+            'message' => "<@{$buyer->getDiscordId()}> a acheté l'item « __{$item->getName()}__ » de <@{$seller->getDiscordId()}>.",
         ];
     }
 }

@@ -37,6 +37,8 @@ class TransactionRepository extends ServiceEntityRepository
     {
         return $this->createQueryBuilder('t')
             ->andWhere('(t.owner = :a AND t.relatedUser = :b) OR (t.owner = :b AND t.relatedUser = :a)')
+            ->andWhere('t.type = :type')
+            ->setParameter('type', TransactionType::SELL)
             ->setParameter('a', $userA)
             ->setParameter('b', $userB)
             ->orderBy('t.createdAt', 'DESC')

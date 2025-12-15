@@ -57,15 +57,15 @@ class User implements UserInterface
 
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     #[Groups(['user:read', 'user:write'])]
-    private ?string $accessToken = null;
+    private ?string $discordAccessToken = null;
 
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     #[Groups(['user:read', 'user:write'])]
-    private ?string $refreshToken = null;
+    private ?string $discordRefreshToken = null;
 
     #[ORM\Column(nullable: true)]
     #[Groups(['user:read', 'user:write'])]
-    private ?\DateTime $tokenExpiresAt = null;
+    private ?\DateTime $discordTokenExpiresAt = null;
 
     #[ORM\Column]
     #[Groups(['user:read'])]
@@ -92,6 +92,12 @@ class User implements UserInterface
     #[ORM\OneToMany(targetEntity: Inventory::class, mappedBy: 'owner', orphanRemoval: true)]
     #[Groups(['user:read'])]
     private Collection $inventories;
+
+    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    private ?string $jwtRefreshToken = null;
+
+    #[ORM\Column(nullable: true)]
+    private ?\DateTime $jwtRefreshTokenExpiresAt = null;
 
     public function __construct()
     {
@@ -189,38 +195,38 @@ class User implements UserInterface
         return $this;
     }
 
-    public function getAccessToken(): ?string
+    public function getDiscordAccessToken(): ?string
     {
-        return $this->accessToken;
+        return $this->discordAccessToken;
     }
 
-    public function setAccessToken(?string $accessToken): static
+    public function setDiscordAccessToken(?string $discordAccessToken): static
     {
-        $this->accessToken = $accessToken;
+        $this->discordAccessToken = $discordAccessToken;
 
         return $this;
     }
 
-    public function getRefreshToken(): ?string
+    public function getDiscordRefreshToken(): ?string
     {
-        return $this->refreshToken;
+        return $this->discordRefreshToken;
     }
 
-    public function setRefreshToken(?string $refreshToken): static
+    public function setDiscordRefreshToken(?string $discordRefreshToken): static
     {
-        $this->refreshToken = $refreshToken;
+        $this->discordRefreshToken = $discordRefreshToken;
 
         return $this;
     }
 
-    public function getTokenExpiresAt(): ?\DateTime
+    public function getDiscordTokenExpiresAt(): ?\DateTime
     {
-        return $this->tokenExpiresAt;
+        return $this->discordTokenExpiresAt;
     }
 
-    public function setTokenExpiresAt(?\DateTime $tokenExpiresAt): static
+    public function setDiscordTokenExpiresAt(?\DateTime $discordTokenExpiresAt): static
     {
-        $this->tokenExpiresAt = $tokenExpiresAt;
+        $this->discordTokenExpiresAt = $discordTokenExpiresAt;
 
         return $this;
     }
@@ -303,6 +309,16 @@ class User implements UserInterface
         return $this->inventories;
     }
 
+    public function getInventoryForItem(Item $item): ?Inventory
+    {
+        foreach ($this->getInventories() as $inventory) {
+            if ($inventory->getItem()->getId() === $item->getId()) {
+                return $inventory;
+            }
+        }
+        return null;
+    }
+
     public function addInventory(Inventory $inventory): static
     {
         if (!$this->inventories->contains($inventory)) {
@@ -325,6 +341,16 @@ class User implements UserInterface
         return $this;
     }
 
+    public function hasItem(Item $item): bool
+    {
+        foreach ($this->inventories as $inventory) {
+            if ($inventory->getItem()->getId() === $item->getId()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
         public function getUserIdentifier(): string
     {
         // Identifiant unique de l'utilisateur
@@ -335,6 +361,30 @@ class User implements UserInterface
     {
         // Cette méthode sert à effacer d'éventuelles données sensibles
         // (comme un mot de passe en clair). Ici, tu n’en as pas besoin.
+    }
+
+    public function getJwtRefreshToken(): ?string
+    {
+        return $this->jwtRefreshToken;
+    }
+
+    public function setJwtRefreshToken(?string $jwtRefreshToken): static
+    {
+        $this->jwtRefreshToken = $jwtRefreshToken;
+
+        return $this;
+    }
+
+    public function getJwtRefreshTokenExpiresAt(): ?\DateTime
+    {
+        return $this->jwtRefreshTokenExpiresAt;
+    }
+
+    public function setJwtRefreshTokenExpiresAt(?\DateTime $jwtRefreshTokenExpiresAt): static
+    {
+        $this->jwtRefreshTokenExpiresAt = $jwtRefreshTokenExpiresAt;
+
+        return $this;
     }
 
 }

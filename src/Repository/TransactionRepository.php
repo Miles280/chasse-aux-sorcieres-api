@@ -33,6 +33,20 @@ class TransactionRepository extends ServiceEntityRepository
             ->getOneOrNullResult();
     }
 
+    public function getLastTradeBetweenUsers(User $userA, User $userB): ?Transaction
+    {
+        return $this->createQueryBuilder('t')
+            ->andWhere('(t.owner = :a AND t.relatedUser = :b) OR (t.owner = :b AND t.relatedUser = :a)')
+            ->andWhere('t.type = :type')
+            ->setParameter('type', TransactionType::SELL)
+            ->setParameter('a', $userA)
+            ->setParameter('b', $userB)
+            ->orderBy('t.createdAt', 'DESC')
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
+    }
+
 //    /**
 //     * @return Transaction[] Returns an array of Transaction objects
 //     */

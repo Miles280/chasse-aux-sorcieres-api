@@ -31,7 +31,8 @@ security:
   access_control:
     - { path: ^/bot/auth/login, roles: PUBLIC_ACCESS }
     - { path: ^/bot, roles: ROLE_BOT }
-    - { path: ^/api/auth/discord, roles: PUBLIC_ACCESS }
+    - { path: ^/api/auth/login, roles: PUBLIC_ACCESS }
+    - { path: ^/api/roles, roles: PUBLIC_ACCESS }
     - { path: ^/api, roles: IS_AUTHENTICATED_FULLY }
 
 when@test:

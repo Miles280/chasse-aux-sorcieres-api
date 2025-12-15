@@ -3,12 +3,9 @@
 namespace App\Controller;
 
 use App\Enum\TransactionType;
-use App\Repository\TransactionRepository;
-use App\Repository\UserRepository;
-use App\Service\DiscordUserService;
+use App\Service\Auth\DiscordUserManager;
 use App\Service\EconomyService;
 use App\Service\RequestPayloadService;
-use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -17,56 +14,28 @@ use Symfony\Component\Routing\Attribute\Route;
 #[Route('/bot/economy')]
 final class BotEconomyController extends AbstractController
 {
-    private UserRepository $userRepository;
-    private TransactionRepository $transactionRepository;
-    private EntityManagerInterface $em;
     private EconomyService $economyService;
-    private DiscordUserService $discordUserService;
+    private DiscordUserManager $discordUserService;
 
-    public function __construct(UserRepository $userRepository, TransactionRepository $transactionRepository, EntityManagerInterface $em, EconomyService $economyService, DiscordUserService $discordUserService)
+    public function __construct(EconomyService $economyService, DiscordUserManager $discordUserService)
     {
-        $this->userRepository = $userRepository;
-        $this->transactionRepository = $transactionRepository;
-        $this->em = $em;
         $this->economyService = $economyService;
         $this->discordUserService = $discordUserService;
     }
 
-
-    #[Route('/{discordId}', name: 'app_bot_view', methods: ['GET'])]
+    #[Route('/{discordId}', name: 'app_bot_economy_view', methods: ['GET'])]
     public function view(string $discordId): JsonResponse
     {
-        // Récupération en base de données de l'utilisateur demandé  
+        // Récupération du user
         $user = $this->discordUserService->findOrCreateUserByDiscordId($discordId);
 
-        // Récupération des 5 dernières transactions de l'utilisateur
-        $transactions = $this->transactionRepository->findBy(
-            ['owner' => $user], 
-            ['createdAt' => 'DESC'], 
-            5
-        );
+        // Délégation complète au service
+        $overview = $this->economyService->getUserOverview($user);
 
-        // Transformation des transactions en tableau pour le JSON
-        $transactionsData = array_map(function ($transaction) {
-            return [
-                'id' => $transaction->getId(),
-                'type' => $transaction->getType()->value,
-                'currency' => $transaction->getCurrency()->value,
-                'amount' => $transaction->getAmount(),
-                'description' => $transaction->getDescription(),
-                'relatedUserId' => $transaction->getRelatedUser()?->getDiscordId(),
-                'createdAt' => $transaction->getCreatedAt()->getTimestamp(),
-            ];
-        }, $transactions);
-
-        return $this->json([
-            'gems' => $user->getGems(),
-            'rubies' => $user->getRubies(),
-            'transactions' => $transactionsData
-        ]);
+        return $this->json($overview);
     }
 
-    #[Route('/give', name: 'app_bot_give', methods: ['POST'])]
+    #[Route('/give', name: 'app_bot_economy_give', methods: ['POST'])]
     public function give(Request $request, RequestPayloadService $payloadService): JsonResponse
     {
         // Extraction et validation des données JSON envoyées par le bot
@@ -140,7 +109,7 @@ final class BotEconomyController extends AbstractController
         ]);
     }
 
-    #[Route('/add', name: 'app_bot_add', methods: ['POST'])]
+    #[Route('/add', name: 'app_bot_economy_add', methods: ['POST'])]
     public function add(Request $request, RequestPayloadService $payloadService): JsonResponse
     {   
         // Extraction et validation des données JSON envoyées par le bot
@@ -168,7 +137,7 @@ final class BotEconomyController extends AbstractController
         }
 
         // Création de la transaction 
-        $this->economyService->createTransaction(TransactionType::ADMIN, $currency, $amount, $user);
+        $this->economyService->createTransaction(TransactionType::ADD, $currency, $amount, $user);
 
         return $this->json([
             'success' => true,
@@ -180,7 +149,7 @@ final class BotEconomyController extends AbstractController
         ]);
     }
 
-    #[Route('/remove', name: 'app_bot_remove', methods: ['POST'])]
+    #[Route('/remove', name: 'app_bot_economy_remove', methods: ['POST'])]
     public function remove(Request $request, RequestPayloadService $payloadService): JsonResponse
     {
         // Extraction et validation des données JSON envoyées par le bot
@@ -225,7 +194,7 @@ final class BotEconomyController extends AbstractController
         }
 
         // Création de la transaction 
-        $this->economyService->createTransaction(TransactionType::ADMIN, $currency, -$amount, $user);
+        $this->economyService->createTransaction(TransactionType::REMOVE, $currency, $amount, $user);
 
         return $this->json([
             'success' => true,
@@ -237,7 +206,7 @@ final class BotEconomyController extends AbstractController
         ]);
     }
     
-    #[Route('/set', name: 'app_bot_set', methods: ['POST'])]
+    #[Route('/set', name: 'app_bot_economy_set', methods: ['POST'])]
     public function set(Request $request, RequestPayloadService $payloadService): JsonResponse
     {
         // Extraction et validation des données JSON envoyées par le bot
@@ -248,7 +217,7 @@ final class BotEconomyController extends AbstractController
         $amount = $payload['amount'];
 
         // Vérifications de validité des données reçues
-        if ($error = $this->economyService->validateTransactionData($currency, $amount)) {
+        if ($error = $this->economyService->validateTransactionData($currency, $amount, true)) {
             return $error; 
         }
 
@@ -276,4 +245,22 @@ final class BotEconomyController extends AbstractController
             ],
         ]);
     }
+
+    #[Route('/transactions/{discordId}', name: 'app_bot_economy_transactions', methods: ['GET'])]
+    public function history(string $discordId, Request $request): JsonResponse
+    {
+        // Récupération de l'utilisateur
+        $user = $this->discordUserService->findOrCreateUserByDiscordId($discordId);
+
+        // Récupération du numéro de page et des filtres de type
+        $page = max(1, (int) $request->query->get('page', 1));
+        $types = $request->query->get('types', ''); 
+        $types = $types ? explode(',', $types) : [];
+
+        // Appel du service pour récupérer les transactions formatées
+        $history = $this->economyService->getTransactionHistory($user, $page, $types);
+
+        return $this->json($history);
+    }
+
 }

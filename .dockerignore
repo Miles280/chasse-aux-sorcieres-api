@@ -1,0 +1,12 @@
+.git
+.gitignore
+
+Dockerfile
+
+var/cache/*
+var/log/*
+var/sessions/*
+
+.env.dev
+
+vendor/

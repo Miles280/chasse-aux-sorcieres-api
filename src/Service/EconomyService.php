@@ -12,7 +12,7 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 
 class EconomyService
 {
-    private const DEFAULT_PAGE_LIMIT = 15;
+    private const DEFAULT_PAGE_LIMIT = 10;
 
     public function __construct(
         private EntityManagerInterface $em,

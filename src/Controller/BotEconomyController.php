@@ -23,18 +23,6 @@ final class BotEconomyController extends AbstractController
         $this->discordUserService = $discordUserService;
     }
 
-    #[Route('/{discordId}', name: 'app_bot_economy_view', methods: ['GET'])]
-    public function view(string $discordId): JsonResponse
-    {
-        // Récupération du user
-        $user = $this->discordUserService->findOrCreateUserByDiscordId($discordId);
-
-        // Délégation complète au service
-        $overview = $this->economyService->getUserOverview($user);
-
-        return $this->json($overview);
-    }
-
     #[Route('/give', name: 'app_bot_economy_give', methods: ['POST'])]
     public function give(Request $request, RequestPayloadService $payloadService): JsonResponse
     {
@@ -263,4 +251,56 @@ final class BotEconomyController extends AbstractController
         return $this->json($history);
     }
 
+    #[Route('/casino', name: 'app_bot_economy_casino', methods: ['POST'])]
+    public function casino(Request $request, RequestPayloadService $payloadService): JsonResponse
+    {
+        // 1. On valide les données reçues
+        $payload = $payloadService->extractValidatedPayload($request, ['discordId', 'amount', 'operation']);
+        if ($payload instanceof JsonResponse) return $payload;
+
+        $userId = $payload['discordId'];
+        $amount = (int) $payload['amount']; 
+        $operation = $payload['operation']; // 'add' (gain) ou 'remove' (perte)
+
+        // Validation de base
+        if (!in_array($operation, ['add', 'remove'])) {
+            return $this->json(['error' => "L'opération doit être 'add' ou 'remove'."], 400);
+        }
+        
+        if (!is_numeric($amount) || $amount <= 0) {
+            return new JsonResponse(['error' => 'Le montant doit être un nombre positif.'], 400);
+        }
+
+        // 2. Récupération du user
+        $user = $this->discordUserService->findOrCreateUserByDiscordId($userId);
+        $oldRubies = $user->getRubies();
+
+        // 3. Appel du service "intelligent"
+        $result = $this->economyService->processCasinoTransaction($user, $amount, $operation);
+
+        // Si le service renvoie une erreur (ex: solde insuffisant)
+        if ($result && isset($result['error'])) {
+            return $this->json(['error' => $result['error']], 400);
+        }
+
+        // 4. Retour de la réponse
+        return $this->json([
+            'success' => true,
+            'old' => $oldRubies,
+            'rubies' => $user->getRubies(),
+            
+        ]);
+    }
+
+    #[Route('/{discordId}', name: 'app_bot_economy_view', methods: ['GET'])]
+    public function view(string $discordId): JsonResponse
+    {
+        // Récupération du user
+        $user = $this->discordUserService->findOrCreateUserByDiscordId($discordId);
+
+        // Délégation complète au service
+        $overview = $this->economyService->getUserOverview($user);
+
+        return $this->json($overview);
+    }
 }

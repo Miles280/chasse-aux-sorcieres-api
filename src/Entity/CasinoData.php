@@ -5,6 +5,9 @@ namespace App\Entity;
 use App\Repository\CasinoDataRepository;
 use Doctrine\ORM\Mapping as ORM;
 use ApiPlatform\Metadata\ApiResource;
+use App\Enum\CasinoGame;
+use DateTimeImmutable;
+use Doctrine\DBAL\Types\Types;
 use Symfony\Component\Serializer\Annotation\Groups;
 
 #[ORM\Entity(repositoryClass: CasinoDataRepository::class)]
@@ -20,9 +23,9 @@ class CasinoData
     #[Groups(['casinodata:read'])]
     private ?int $id = null;
 
-    #[ORM\Column(length: 50)]
+    #[ORM\Column(enumType: CasinoGame::class)]
     #[Groups(['casinodata:read', 'casinodata:write'])]
-    private ?string $game = null;
+    private ?CasinoGame $game = null;
 
     #[ORM\Column]
     #[Groups(['casinodata:read', 'casinodata:write'])]
@@ -32,6 +35,10 @@ class CasinoData
     #[Groups(['casinodata:read', 'casinodata:write'])]
     private ?int $wonAmount = null;
 
+    #[ORM\Column(type: Types::JSON, nullable: true)]
+    #[Groups(['casinodata:read', 'casinodata:write'])]
+    private ?array $details = null;
+    
     #[ORM\Column]
     #[Groups(['casinodata:read'])]
     private ?\DateTimeImmutable $createdAt = null;
@@ -40,6 +47,11 @@ class CasinoData
     #[ORM\JoinColumn(nullable: false)]
     #[Groups(['casinodata:read', 'casinodata:write'])]
     private ?User $player = null;
+
+    public function __construct()
+    {
+        $this->createdAt = new DateTimeImmutable();
+    }
 
     public function getId(): ?int
     {
@@ -51,7 +63,7 @@ class CasinoData
         return $this->game;
     }
 
-    public function setGame(string $game): static
+    public function setGame(CasinoGame $game): static
     {
         $this->game = $game;
 
@@ -82,6 +94,17 @@ class CasinoData
         return $this;
     }
 
+    public function getDetails(): ?array
+    {
+        return $this->details;
+    }
+
+    public function setDetails(?array $details): static
+    {
+        $this->details = $details;
+        return $this;
+    }
+
     public function getCreatedAt(): ?\DateTimeImmutable
     {
         return $this->createdAt;
@@ -104,5 +127,12 @@ class CasinoData
         $this->player = $player;
 
         return $this;
+    }
+
+
+    #[Groups(['casinodata:read'])]
+    public function getNetProfit(): int
+    {
+        return $this->wonAmount - $this->betAmount;
     }
 }

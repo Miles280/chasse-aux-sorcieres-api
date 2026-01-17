@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Controller;
+namespace App\Controller\Bot;
 
 use App\Entity\Item;
 use App\Service\Auth\DiscordUserManager;
@@ -13,7 +13,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Attribute\Route;
 
 #[Route('/bot/inventory')]
-final class BotInventoryController extends AbstractController
+final class InventoryController extends AbstractController
 {
     public function __construct(
         private InventoryService $inventoryService, 

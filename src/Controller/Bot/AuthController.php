@@ -1,5 +1,5 @@
 <?php
-namespace App\Controller;
+namespace App\Controller\Bot;
 
 use App\Entity\User;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -11,7 +11,7 @@ use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Routing\Annotation\Route;
 
 #[Route('/bot/auth')]
-class BotAuthController extends AbstractController
+class AuthController extends AbstractController
 {
     private $userRepo;
     private $jwtManager;

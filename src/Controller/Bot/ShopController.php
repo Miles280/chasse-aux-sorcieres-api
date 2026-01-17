@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Controller;
+namespace App\Controller\Bot;
 
 use App\Repository\ItemRepository;
 use App\Service\Auth\DiscordUserManager;
@@ -13,7 +13,7 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
 
 #[Route('/bot/shop')]
-final class BotShopController extends AbstractController
+final class ShopController extends AbstractController
 {
     private ShopService $shopService;
     private DiscordUserManager $discordUserService;

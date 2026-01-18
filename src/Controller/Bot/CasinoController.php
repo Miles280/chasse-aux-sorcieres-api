@@ -56,7 +56,6 @@ final class CasinoController extends AbstractController
         }
 
         return $this->json([
-            'success' => true,
             'old' => $oldRubies,
             'rubies' => $user->getRubies(),
             

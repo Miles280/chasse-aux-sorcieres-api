@@ -88,7 +88,6 @@ final class EconomyController extends AbstractController
         $this->economyService->createTransaction(TransactionType::RECEIVE, $currency, $amount, $receiver, $sender);
 
         return $this->json([
-            'success' => true,
             'old' => $old,
             'balance' => [
                 'gems'   => $sender->getGems(),
@@ -128,7 +127,6 @@ final class EconomyController extends AbstractController
         $this->economyService->createTransaction(TransactionType::ADD, $currency, $amount, $user);
 
         return $this->json([
-            'success' => true,
             'old' => $old,
             'balance' => [
                 'gems'   => $user->getGems(),
@@ -161,7 +159,6 @@ final class EconomyController extends AbstractController
 
             if ($old < $amount) {
                 return $this->json([
-                    'success' => false,
                     'error' => "Le membre spécifié n'a pas assez de Gemmes pour cette opération."
                 ], 400);
             }
@@ -173,7 +170,6 @@ final class EconomyController extends AbstractController
 
             if ($old < $amount) {
                 return $this->json([
-                    'success' => false,
                     'error' => "Le membre spécifié n'a pas assez de Rubis pour cette opération."
                 ], 400);
             }
@@ -185,7 +181,6 @@ final class EconomyController extends AbstractController
         $this->economyService->createTransaction(TransactionType::REMOVE, $currency, $amount, $user);
 
         return $this->json([
-            'success' => true,
             'old' => $old,
             'balance' => [
                 'gems'   => $user->getGems(),
@@ -225,7 +220,6 @@ final class EconomyController extends AbstractController
         $this->economyService->createTransaction(TransactionType::SET, $currency, $amount, $user);
 
         return $this->json([
-            'success' => true,
             'old' => $old,
             'balance' => [
                 'gems'   => $user->getGems(),

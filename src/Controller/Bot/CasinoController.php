@@ -67,10 +67,10 @@ final class CasinoController extends AbstractController
     public function logGame(Request $request, RequestPayloadService $payloadService): JsonResponse
     {
         // Extraction et validation des données JSON envoyées par le bot
-        $payload = $payloadService->extractValidatedPayload($request, ['discordId', 'game', 'betAmount', 'winAmount', 'details']);
+        $payload = $payloadService->extractValidatedPayload($request, ['discordId', 'gameName', 'betAmount', 'winAmount', 'details']);
         if ($payload instanceof JsonResponse) return $payload;
 
-        $game = CasinoGame::tryFrom($payload['game']);
+        $gameName = CasinoGame::tryFrom($payload['gameName']);
         $betAmount = $payload['betAmount'];
         $winAmount = $payload['winAmount'];
         $details = $payload['details'];
@@ -78,12 +78,12 @@ final class CasinoController extends AbstractController
         // Récupération de l'utilisateur
         $user = $this->discordUserService->findOrCreateUserByDiscordId($payload['discordId']);
 
-        if (!$game) {
+        if (!$gameName) {
             return $this->json(null, Response::HTTP_BAD_REQUEST);
         }
 
         // Appel du service
-        $this->casinoService->saveData($user, $game, $betAmount, $winAmount, $details);
+        $this->casinoService->saveData($user, $gameName, $betAmount, $winAmount, $details);
 
         return new JsonResponse(null, Response::HTTP_NO_CONTENT);
     }

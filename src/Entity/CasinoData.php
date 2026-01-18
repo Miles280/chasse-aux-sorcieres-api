@@ -25,7 +25,7 @@ class CasinoData
 
     #[ORM\Column(enumType: CasinoGame::class)]
     #[Groups(['casinodata:read', 'casinodata:write'])]
-    private ?CasinoGame $game = null;
+    private ?CasinoGame $gameName = null;
 
     #[ORM\Column]
     #[Groups(['casinodata:read', 'casinodata:write'])]
@@ -58,14 +58,14 @@ class CasinoData
         return $this->id;
     }
 
-    public function getGame(): ?string
+    public function getGameName(): ?string
     {
-        return $this->game;
+        return $this->gameName;
     }
 
-    public function setGame(CasinoGame $game): static
+    public function setGameName(CasinoGame $gameName): static
     {
-        $this->game = $game;
+        $this->gameName = $gameName;
 
         return $this;
     }

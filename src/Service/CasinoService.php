@@ -62,12 +62,12 @@ class CasinoService
         return null; 
     }
 
-    public function saveData(User $user, CasinoGame $game, int $betAmount, int $winAmount, array $details): void
+    public function saveData(User $user, CasinoGame $gameName, int $betAmount, int $winAmount, array $details): void
     {
         // Création de la donnée statistique
         $data = new CasinoData();
         $data->setPlayer($user);
-        $data->setGame($game); 
+        $data->setGameName($gameName); 
         $data->setBetAmount($betAmount); 
         $data->setWonAmount($winAmount); 
         $data->setDetails($details); 

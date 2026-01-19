@@ -6,6 +6,7 @@ use App\Entity\Inventory;
 use App\Entity\Item;
 use App\Entity\User;
 use App\Enum\TransactionType;
+use App\Exception\EconomyException;
 use App\Repository\InventoryRepository;
 use App\Repository\TransactionRepository;
 use Doctrine\ORM\EntityManagerInterface;
@@ -37,27 +38,25 @@ class InventoryService
 
     }
 
+    /**
+     * @throws EconomyException
+     */
     public function sellItem(User $seller, User $buyer, Item $item, string $currency, int $price): array
     {
         if ($seller->getId() === $buyer->getId()) {
-            return ['error' => "Vous ne pouvez pas vous vendre un item à vous-même."];
+            throw new EconomyException("Vous ne pouvez pas vous vendre un item à vous-même.");
         }
 
         // Vérifier que le vendeur possède bien l’item
         $sellerInventory = $seller->getInventoryForItem($item);
         if (!$sellerInventory || $sellerInventory->getQuantity() < 1) {
-            return ['error' => "Vous ne possédez pas cet item."]; 
+            throw new EconomyException("Vous ne possédez pas cet item.");
         }
 
         // Vérifier que l’acheteur a assez d'argent
-        if($currency === 'gems') {
-            if ($buyer->getGems() < $price) {
-                return ['error' => "L'acheteur n'a pas assez de fond pour acheter cet item."];
-            }
-        } else {
-            if ($buyer->getRubies() < $price) {
-                return ['error' => "L'acheteur n'a pas assez de fond pour acheter cet item."];
-            }
+        $buyerBalance = ($currency === 'gems') ? $buyer->getGems() : $buyer->getRubies();
+        if ($buyerBalance < $price) {
+            throw new EconomyException("L'acheteur n'a pas assez de fonds pour acheter cet item.");
         }
 
         // Vérifier la dernière transaction entre les deux joueurs
@@ -67,9 +66,9 @@ class InventoryService
 
             if (new \DateTime() < $nextPossible) {
                 $timestamp = $nextPossible->getTimestamp();
-                return [
-                    'error' => "Une vente entre ces deux joueurs a déjà eu lieu récemment. \n Vous pourrez de nouveau en réaliser une <t:$timestamp:R> (à <t:$timestamp:t>)."
-                ];
+                throw new EconomyException(
+                    "Une vente entre ces deux joueurs a déjà eu lieu récemment.\n Vous pourrez de nouveau en réaliser une <t:$timestamp:R> (à <t:$timestamp:t>)."
+                );
             }
         }
 

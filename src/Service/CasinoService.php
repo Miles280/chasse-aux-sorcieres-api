@@ -8,6 +8,7 @@ use App\Entity\Transaction;
 use App\Enum\CasinoGame;
 use App\Enum\Currency;
 use App\Enum\TransactionType;
+use App\Exception\EconomyException;
 use App\Repository\TransactionRepository;
 use Doctrine\ORM\EntityManagerInterface;
 
@@ -19,14 +20,14 @@ class CasinoService
         private TransactionRepository $transactionRepository
     ) {}
 
-    public function processCasinoTransaction(User $user, int $amount, string $operation): ?array
+    public function processCasinoTransaction(User $user, int $amount, string $operation): void
     {
         // Calcul du montant signé (positif si gain, négatif si perte)
         $signedAmount = ($operation === 'add') ? $amount : -$amount;
 
         // Mise à jour du solde de l'utilisateur 
         $newBalance = $user->getRubies() + $signedAmount;
-        if ($newBalance < 0) return ['error' => "Pas assez de Rubis."];
+        if ($newBalance < 0) throw new EconomyException("Pas assez de Rubis.");
         $user->setRubies($newBalance);
         
         // Récupération de la dernière transaction CASINO de cet utilisateur
@@ -58,8 +59,6 @@ class CasinoService
         }
 
         $this->em->flush();
-
-        return null; 
     }
 
     public function saveData(User $user, CasinoGame $gameName, int $betAmount, int $winAmount, array $details): void

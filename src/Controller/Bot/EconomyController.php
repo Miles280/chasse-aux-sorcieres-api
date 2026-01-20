@@ -25,6 +25,22 @@ final class EconomyController extends AbstractBotController
         $this->discordUserService = $discordUserService;
     }
 
+    #[Route('/view/{discordId}', name: 'app_bot_economy_view', methods: ['GET'])]
+    public function view(string $discordId): JsonResponse
+    {
+        try { 
+            // Récupération du user
+            $user = $this->discordUserService->findOrCreateUserByDiscordId($discordId);
+
+            // Délégation complète au service
+            $overview = $this->economyService->getUserOverview($user);
+
+            return $this->successResponse($overview);
+        } catch (\Throwable $e) {
+            return $this->errorResponse("Erreur interne du serveur.", Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
     #[Route('/give', name: 'app_bot_economy_give', methods: ['POST'])]
     public function give(Request $request, RequestPayloadService $payloadService): JsonResponse
     {
@@ -71,13 +87,15 @@ final class EconomyController extends AbstractBotController
                 }
             }
 
+            // Stockage du solde de l'utilisateur avant modification
+            $oldGems = $sender->getGems();
+            $oldRubies = $sender->getRubies();
+
             // Mise à jour des soldes en fonction de la monnaie spécifiée
             if ($currency === 'gems') {
-                $old = $sender->getGems();
                 $sender->setGems($sender->getGems() - $amount);
                 $receiver->setGems($receiver->getGems() + $amount);
             } else {
-                $old = $sender->getRubies();
                 $sender->setRubies($sender->getRubies() - $amount);
                 $receiver->setRubies($receiver->getRubies() + $amount);
             }
@@ -87,8 +105,11 @@ final class EconomyController extends AbstractBotController
             $this->economyService->createTransaction(TransactionType::RECEIVE, $currency, $amount, $receiver, $sender);
 
             return $this->successResponse([
-                'old' => $old,
-                'balance' => [
+                'previous' => [
+                    'gems'   => $oldGems,
+                    'rubies' => $oldRubies
+                ],
+                'current' => [
                     'gems'   => $sender->getGems(),
                     'rubies' => $sender->getRubies(),
                 ]
@@ -120,21 +141,26 @@ final class EconomyController extends AbstractBotController
             // Récupération de l'utilisateur cible via son identifiant Discord
             $user = $this->discordUserService->findOrCreateUserByDiscordId($userId);
 
+            // Stockage du solde de l'utilisateur avant modification
+            $oldGems = $user->getGems();
+            $oldRubies = $user->getRubies();
+
             // Mise à jour du solde en fonction de la monnaie spécifiée
             if ($currency === 'gems') {
-                $old = $user->getGems();
-                $user->setGems($old + $amount);
+                $user->setGems($oldGems + $amount);
             } else {
-                $old = $user->getRubies();
-                $user->setRubies($old + $amount);
+                $user->setRubies($oldRubies + $amount);
             }
 
             // Création de la transaction 
             $this->economyService->createTransaction(TransactionType::ADD, $currency, $amount, $user);
 
             return $this->successResponse([
-                'old' => $old,
-                'balance' => [
+                'previous' => [
+                    'gems'   => $oldGems,
+                    'rubies' => $oldRubies
+                ],
+                'current' => [
                     'gems'   => $user->getGems(),
                     'rubies' => $user->getRubies(),
                 ]
@@ -166,35 +192,35 @@ final class EconomyController extends AbstractBotController
             // Récupération de l'utilisateur cible via son identifiant Discord
             $user = $this->discordUserService->findOrCreateUserByDiscordId($userId);
 
+            // Stockage du solde de l'utilisateur avant modification
+            $oldGems = $user->getGems();
+            $oldRubies = $user->getRubies();
+
             // Mise à jour du solde en fonction de la monnaie spécifiée
             if ($currency === 'gems') {
-                $old = $user->getGems();
-
-                if ($old < $amount) {
+                if ($oldGems < $amount) {
                     throw new EconomyException("Le membre spécifié n'a pas assez de Gemmes pour cette opération.", Response::HTTP_BAD_REQUEST);
                 }
-
-                $user->setGems($old - $amount);
-
+                $user->setGems($oldGems - $amount);
             } else {
-                $old = $user->getRubies();
-
-                if ($old < $amount) {
+                if ($oldRubies < $amount) {
                     throw new EconomyException("Le membre spécifié n'a pas assez de Rubis pour cette opération.", Response::HTTP_BAD_REQUEST);
                 }
-
-                $user->setRubies($old - $amount);
+                $user->setRubies($oldRubies - $amount);
             }
 
             // Création de la transaction 
             $this->economyService->createTransaction(TransactionType::REMOVE, $currency, $amount, $user);
 
             return $this->successResponse([
-                'old' => $old,
-                'balance' => [
+                'previous' => [
+                    'gems'   => $oldGems,
+                    'rubies' => $oldRubies
+                ],
+                'current' => [
                     'gems'   => $user->getGems(),
                     'rubies' => $user->getRubies(),
-                ],
+                ]
             ]);
         } catch (InvalidPayloadException $e) {
             return $this->errorResponse($e->getMessage(), Response::HTTP_BAD_REQUEST);
@@ -223,12 +249,14 @@ final class EconomyController extends AbstractBotController
             // Récupération de l'utilisateur cible via son identifiant Discord
             $user = $this->discordUserService->findOrCreateUserByDiscordId($userId);
 
+            // Stockage du solde de l'utilisateur avant modification
+            $oldGems = $user->getGems();
+            $oldRubies = $user->getRubies();
+
             // Mise à jour du solde en fonction de la monnaie spécifiée
             if ($currency === 'gems') {
-                $old = $user->getGems();
                 $user->setGems($amount);
             } else {
-                $old = $user->getRubies();
                 $user->setRubies($amount);
             }
 
@@ -236,11 +264,14 @@ final class EconomyController extends AbstractBotController
             $this->economyService->createTransaction(TransactionType::SET, $currency, $amount, $user);
 
             return $this->successResponse([
-                'old' => $old,
-                'balance' => [
+                'previous' => [
+                    'gems'   => $oldGems,
+                    'rubies' => $oldRubies
+                ],
+                'current' => [
                     'gems'   => $user->getGems(),
                     'rubies' => $user->getRubies(),
-                ],
+                ]
             ]);
         } catch (InvalidPayloadException $e) {
             return $this->errorResponse($e->getMessage(), Response::HTTP_BAD_REQUEST);
@@ -267,23 +298,7 @@ final class EconomyController extends AbstractBotController
             // Appel du service pour récupérer les transactions formatées
             $history = $this->economyService->getTransactionHistory($user, $page, $types);
 
-            return $this->successResponse([$history]);
-        } catch (\Throwable $e) {
-            return $this->errorResponse("Erreur interne du serveur.", Response::HTTP_INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    #[Route('/{discordId}', name: 'app_bot_economy_view', methods: ['GET'])]
-    public function view(string $discordId): JsonResponse
-    {
-        try { 
-            // Récupération du user
-            $user = $this->discordUserService->findOrCreateUserByDiscordId($discordId);
-
-            // Délégation complète au service
-            $overview = $this->economyService->getUserOverview($user);
-
-            return $this->successResponse([$overview]);
+            return $this->successResponse($history);
         } catch (\Throwable $e) {
             return $this->errorResponse("Erreur interne du serveur.", Response::HTTP_INTERNAL_SERVER_ERROR);
         }

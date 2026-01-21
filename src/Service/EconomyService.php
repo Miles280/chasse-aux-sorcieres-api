@@ -98,13 +98,15 @@ class EconomyService
         );
 
         // Compte le total filtré
-        $total = $this->transactionRepository->count($criteria);
+        $totalCount = $this->transactionRepository->count($criteria);
 
         return [
-            'transactions' => $this->formatTransactions($transactions),
-            'page' => $page,
-            'total' => $total,
-            'pages' => ceil($total / $limit),
+            'items' => $this->formatTransactions($transactions),
+            'pagination' => [
+                'currentPage' => $page,
+                'totalPages' => ceil($totalCount / $limit),
+                'totalItems' => $totalCount
+            ]
         ];
     }
 

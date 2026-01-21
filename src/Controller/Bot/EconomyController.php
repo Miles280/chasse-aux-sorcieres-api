@@ -36,6 +36,7 @@ final class EconomyController extends AbstractBotController
             $overview = $this->economyService->getUserOverview($user);
 
             return $this->successResponse($overview);
+            
         } catch (\Throwable $e) {
             return $this->errorResponse("Erreur interne du serveur.", Response::HTTP_INTERNAL_SERVER_ERROR);
         }
@@ -114,6 +115,7 @@ final class EconomyController extends AbstractBotController
                     'rubies' => $sender->getRubies(),
                 ]
             ]);
+
         } catch (InvalidPayloadException $e) {
             return $this->errorResponse($e->getMessage(), Response::HTTP_BAD_REQUEST);
         } catch (EconomyException $e) {
@@ -165,6 +167,7 @@ final class EconomyController extends AbstractBotController
                     'rubies' => $user->getRubies(),
                 ]
             ]);
+
         } catch (InvalidPayloadException $e) {
             return $this->errorResponse($e->getMessage(), Response::HTTP_BAD_REQUEST);
         } catch (EconomyException $e) {
@@ -222,6 +225,7 @@ final class EconomyController extends AbstractBotController
                     'rubies' => $user->getRubies(),
                 ]
             ]);
+
         } catch (InvalidPayloadException $e) {
             return $this->errorResponse($e->getMessage(), Response::HTTP_BAD_REQUEST);
         } catch (EconomyException $e) {
@@ -273,6 +277,7 @@ final class EconomyController extends AbstractBotController
                     'rubies' => $user->getRubies(),
                 ]
             ]);
+
         } catch (InvalidPayloadException $e) {
             return $this->errorResponse($e->getMessage(), Response::HTTP_BAD_REQUEST);
         } catch (EconomyException $e) {
@@ -299,6 +304,7 @@ final class EconomyController extends AbstractBotController
             $history = $this->economyService->getTransactionHistory($user, $page, $types);
 
             return $this->successResponse($history);
+
         } catch (\Throwable $e) {
             return $this->errorResponse("Erreur interne du serveur.", Response::HTTP_INTERNAL_SERVER_ERROR);
         }

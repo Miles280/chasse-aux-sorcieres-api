@@ -53,8 +53,8 @@ final class CasinoController extends AbstractBotController
             $this->casinoService->processCasinoTransaction($user, $amount, $operation);
 
             return $this->successResponse([
-                'old' => $oldRubies,
-                'rubies' => $user->getRubies()
+                'previous' => $oldRubies,
+                'current' => $user->getRubies()
             ]);
         } catch (InvalidPayloadException | EconomyException $e) {
             return $this->errorResponse($e->getMessage(), Response::HTTP_BAD_REQUEST);

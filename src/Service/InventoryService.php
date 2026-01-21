@@ -35,7 +35,6 @@ class InventoryService
             null,
             ['groups' => ['inventory:read']]
         );
-
     }
 
     /**

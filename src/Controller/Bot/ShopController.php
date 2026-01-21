@@ -39,7 +39,7 @@ final class ShopController extends AbstractBotController
 
         $articles = $this->shopService->getArticlesByCurrency($page, $currency);
 
-        return $this->successResponse([$articles]);
+        return $this->successResponse($articles);
     }
 
     #[Route('/viewall', name: 'app_bot_shop_viewall', methods: ['GET'])]
@@ -47,7 +47,7 @@ final class ShopController extends AbstractBotController
     {
         $articles = $this->shopService->getAllArticles();
 
-        return $this->successResponse([$articles]);
+        return $this->successResponse($articles);
     }
 
     #[Route('/buy', name: 'app_bot_shop_buy', methods: ['POST'])]
@@ -68,6 +68,7 @@ final class ShopController extends AbstractBotController
             $result = $this->shopService->buyArticle($user, $item);
 
             return $this->successResponse([$result]);
+
         } catch (InvalidPayloadException $e) {
             return $this->errorResponse($e->getMessage(), Response::HTTP_BAD_REQUEST);
         } catch (EconomyException $e) {
@@ -98,6 +99,7 @@ final class ShopController extends AbstractBotController
         );
 
         return $this->json($result);
+
         } catch (InvalidPayloadException $e) {
             return $this->errorResponse($e->getMessage(), Response::HTTP_BAD_REQUEST);
         } catch (EconomyException $e) {

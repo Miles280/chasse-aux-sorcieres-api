@@ -58,9 +58,11 @@ class ShopService
 
         return [
             'items' => $articlesNormalized,
-            'page' => $page,
-            'total' => $total,
-            'pages' => $maxPages,
+            'pagination' => [
+                'currentPage' => $page,
+                'totalPages' => $maxPages,
+                'totalItems' => $total
+            ]
         ];
     }
 

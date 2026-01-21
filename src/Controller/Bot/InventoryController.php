@@ -34,7 +34,10 @@ final class InventoryController extends AbstractBotController
 
             $items = $this->inventoryService->getUserInventory($user);
 
-            return $this->successResponse(['items' => $items]);
+            return $this->successResponse([
+                'items' => $items
+            ]);
+
         } catch (InvalidPayloadException $e) {
             return $this->errorResponse($e->getMessage(), Response::HTTP_BAD_REQUEST);
         } catch (\Throwable $e) {
@@ -61,7 +64,8 @@ final class InventoryController extends AbstractBotController
             $result = $this->inventoryService->sellItem($seller, $buyer, $item, $currency, (int)$payload['price']
             );
 
-            return $this->successResponse([$result]);
+            return $this->successResponse($result);
+
         } catch (InvalidPayloadException $e) {
             return $this->errorResponse($e->getMessage(), Response::HTTP_BAD_REQUEST);
         } catch (EconomyException $e) {

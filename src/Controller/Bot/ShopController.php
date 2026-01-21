@@ -67,7 +67,7 @@ final class ShopController extends AbstractBotController
             // Achat de l'article
             $result = $this->shopService->buyArticle($user, $item);
 
-            return $this->successResponse([$result]);
+            return $this->successResponse($result);
 
         } catch (InvalidPayloadException $e) {
             return $this->errorResponse($e->getMessage(), Response::HTTP_BAD_REQUEST);
@@ -98,7 +98,7 @@ final class ShopController extends AbstractBotController
             ['groups' => ['item:read']]
         );
 
-        return $this->json($result);
+        return $this->successResponse($result);
 
         } catch (InvalidPayloadException $e) {
             return $this->errorResponse($e->getMessage(), Response::HTTP_BAD_REQUEST);

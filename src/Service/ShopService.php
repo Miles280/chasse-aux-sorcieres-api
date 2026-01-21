@@ -73,9 +73,7 @@ class ShopService
     {
         $articles = $this->itemRepository->findAll();
 
-        return [
-            'items' => $articles
-        ];
+        return $articles;
     }
 
     /**
@@ -115,7 +113,7 @@ class ShopService
             $required = $item->getRequiredItem();
 
             if (!$user->hasItem($required)) {
-                throw new EconomyException("Vous devez posséder « {$required->getName()} » avant d’acheter cet article.", Response::HTTP_BAD_REQUEST);
+                throw new EconomyException("Vous devez posséder « __{$required->getName()}__ » avant d’acheter cet article.", Response::HTTP_BAD_REQUEST);
             }
 
             $requiredInventory = $user->getInventoryForItem($required);

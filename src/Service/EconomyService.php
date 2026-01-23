@@ -6,9 +6,10 @@ use App\Entity\User;
 use App\Entity\Transaction;
 use App\Enum\Currency;
 use App\Enum\TransactionType;
+use App\Exception\EconomyException;
 use App\Repository\TransactionRepository;
 use Doctrine\ORM\EntityManagerInterface;
-use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\Response;
 
 class EconomyService
 {
@@ -22,20 +23,20 @@ class EconomyService
     /**
      * Vérifie les données d'une transaction avant traitement.
      */
-    public function validateTransactionData(string $currency, int $amount, ?bool $isSet = false): ?JsonResponse
+    public function validateTransactionData(string $currency, int $amount, ?bool $isSet = false): void
     {
         if (!in_array($currency, ['gems', 'rubies'], true)) {
-            return new JsonResponse(['error' => 'Monnaie invalide.'], 400);
+            throw new EconomyException('Monnaie invalide.', Response::HTTP_BAD_REQUEST);
         }
 
-        if (!is_numeric($amount) || $amount <= 0) {
-            if ($isSet && $amount === 0) {
-                return null;
-            }
-            return new JsonResponse(['error' => 'Le montant doit être un nombre positif.'], 400);
+        $minAllowed = $isSet ? 0 : 1;
+        if ($amount < $minAllowed) {
+            $message = $isSet 
+                ? 'Le montant doit être égal ou supérieur à 0.' 
+                : 'Le montant doit être un nombre positif.';
+                
+            throw new EconomyException($message, Response::HTTP_BAD_REQUEST);
         }
-
-        return null;
     }
 
     /**
@@ -54,7 +55,6 @@ class EconomyService
             ->setType($type)
             ->setCurrency(Currency::from($currency))
             ->setAmount($amount)
-            ->setCreatedAt(new \DateTimeImmutable())
             ->setOwner($owner)
             ->setRelatedUser($relatedUser)
             ->setDescription($description);
@@ -98,13 +98,15 @@ class EconomyService
         );
 
         // Compte le total filtré
-        $total = $this->transactionRepository->count($criteria);
+        $totalCount = $this->transactionRepository->count($criteria);
 
         return [
-            'transactions' => $this->formatTransactions($transactions),
-            'page' => $page,
-            'total' => $total,
-            'pages' => ceil($total / $limit),
+            'items' => $this->formatTransactions($transactions),
+            'pagination' => [
+                'currentPage' => $page,
+                'totalPages' => ceil($totalCount / $limit),
+                'totalItems' => $totalCount
+            ]
         ];
     }
 

@@ -1,19 +1,21 @@
 <?php
 
-namespace App\Controller;
+namespace App\Controller\Bot;
 
+use App\Exception\EconomyException;
+use App\Exception\InvalidPayloadException;
 use App\Repository\ItemRepository;
 use App\Service\Auth\DiscordUserManager;
 use App\Service\RequestPayloadService;
 use App\Service\ShopService;
-use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
 
 #[Route('/bot/shop')]
-final class BotShopController extends AbstractController
+final class ShopController extends AbstractBotController
 {
     private ShopService $shopService;
     private DiscordUserManager $discordUserService;
@@ -37,7 +39,7 @@ final class BotShopController extends AbstractController
 
         $articles = $this->shopService->getArticlesByCurrency($page, $currency);
 
-        return $this->json($articles);
+        return $this->successResponse($articles);
     }
 
     #[Route('/viewall', name: 'app_bot_shop_viewall', methods: ['GET'])]
@@ -45,44 +47,49 @@ final class BotShopController extends AbstractController
     {
         $articles = $this->shopService->getAllArticles();
 
-        return $this->json($articles);
+        return $this->successResponse($articles);
     }
 
     #[Route('/buy', name: 'app_bot_shop_buy', methods: ['POST'])]
     public function buy(Request $request, RequestPayloadService $payloadService): JsonResponse
     {
-        // Extraction et validation des données JSON envoyées par le bot
-        $payload = $payloadService->extractValidatedPayload($request, ['discordId', 'itemId']);
-        if ($payload instanceof JsonResponse) return $payload;
+        try {
+            // Extraction et validation des données JSON envoyées par le bot
+            $payload = $payloadService->extractValidatedPayload($request, ['discordId', 'itemId']);
 
-        $user = $this->discordUserService->findOrCreateUserByDiscordId($payload['discordId']);
-        $item = $this->itemRepository->find($payload['itemId']);
+            $user = $this->discordUserService->findOrCreateUserByDiscordId($payload['discordId']);
+            $item = $this->itemRepository->find($payload['itemId']);
 
-        if (!$item) {
-            return $this->json([
-                'error' => 'Item introuvable.'
-            ], 404);
+            if (!$item) {
+                throw new EconomyException('Item introuvable.', Response::HTTP_NOT_FOUND);
+            }
+
+            // Achat de l'article
+            $result = $this->shopService->buyArticle($user, $item);
+
+            return $this->successResponse($result);
+
+        } catch (InvalidPayloadException $e) {
+            return $this->errorResponse($e->getMessage(), Response::HTTP_BAD_REQUEST);
+        } catch (EconomyException $e) {
+            $statusCode = $e->getCode() ?: Response::HTTP_BAD_REQUEST;
+            return $this->errorResponse($e->getMessage(), $statusCode);
+        } catch (\Throwable $e) {
+            return $this->errorResponse("Erreur interne du serveur.", Response::HTTP_INTERNAL_SERVER_ERROR);
         }
-
-        // Achat de l'article
-        $result = $this->shopService->buyArticle($user, $item);
-
-        return $this->json($result);
     }
 
     #[Route('/detail', name: 'app_bot_shop_detail', methods: ['POST'])]
     public function detail(Request $request, RequestPayloadService $payloadService): JsonResponse
     {
+        try {
         // Extraction et validation des données JSON envoyées par le bot
         $payload = $payloadService->extractValidatedPayload($request, ['itemId']);
-        if ($payload instanceof JsonResponse) return $payload;
 
         $item = $this->itemRepository->find($payload['itemId']);
 
         if (!$item) {
-            return $this->json([
-                'error' => 'Item introuvable.'
-            ], 404);
+            throw new EconomyException('Item introuvable.', Response::HTTP_NOT_FOUND);
         }
 
         $result = $this->normalizer->normalize(
@@ -91,6 +98,15 @@ final class BotShopController extends AbstractController
             ['groups' => ['item:read']]
         );
 
-        return $this->json($result);
+        return $this->successResponse($result);
+
+        } catch (InvalidPayloadException $e) {
+            return $this->errorResponse($e->getMessage(), Response::HTTP_BAD_REQUEST);
+        } catch (EconomyException $e) {
+            $statusCode = $e->getCode() ?: Response::HTTP_BAD_REQUEST;
+            return $this->errorResponse($e->getMessage(), $statusCode);
+        } catch (\Throwable $e) {
+            return $this->errorResponse("Erreur interne du serveur.", Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
     }
 }

@@ -6,8 +6,10 @@ use App\Entity\Inventory;
 use App\Entity\Item;
 use App\Entity\User;
 use App\Enum\TransactionType;
+use App\Exception\EconomyException;
 use App\Repository\ItemRepository;
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
 
 class ShopService 
@@ -56,9 +58,11 @@ class ShopService
 
         return [
             'items' => $articlesNormalized,
-            'page' => $page,
-            'total' => $total,
-            'pages' => $maxPages,
+            'pagination' => [
+                'currentPage' => $page,
+                'totalPages' => $maxPages,
+                'totalItems' => $total
+            ]
         ];
     }
 
@@ -69,9 +73,7 @@ class ShopService
     {
         $articles = $this->itemRepository->findAll();
 
-        return [
-            'items' => $articles
-        ];
+        return $articles;
     }
 
     /**
@@ -81,9 +83,7 @@ class ShopService
     {
         // Vérifier la quantité disponible
         if ($item->getQuantity() !== null && $item->getQuantity() <= 0) {
-            return [
-                'error' => "Cet article n’est plus disponible."
-            ];
+            throw new EconomyException("Cet article n’est plus disponible.", Response::HTTP_BAD_REQUEST);
         }
 
         $currency = $item->getCurrency()->value;
@@ -91,11 +91,11 @@ class ShopService
 
         // Vérifier que l'utilisateur a les fonds nécessaires
         if ($currency === 'gems' && $user->getGems() < $price) {
-            return ['error' => "Vous n'avez pas assez de gemmes pour acheter cet article."];
+            throw new EconomyException("Vous n'avez pas assez de Gemmes pour acheter cet article.", Response::HTTP_BAD_REQUEST);
         }
 
         if ($currency === 'rubies' && $user->getRubies() < $price) {
-            return ['error' => "Vous n'avez pas assez de rubis pour acheter cet article."];
+            throw new EconomyException("Vous n'avez pas assez de Rubis pour acheter cet article.", Response::HTTP_BAD_REQUEST);
         }
 
         // Vérifier que l'utilisateur n'a pas déjà atteint la limite d'achat
@@ -104,9 +104,7 @@ class ShopService
             $currentQty = $inventory ? $inventory->getQuantity() : 0;
 
             if ($currentQty >= $item->getPurchaseLimit()) {
-                return [
-                    'error' => "Vous avez atteint la limite d'achat pour cet article."
-                ];
+                throw new EconomyException("Vous avez atteint la limite d'achat pour cet article.", Response::HTTP_BAD_REQUEST);
             }
         }
 
@@ -115,9 +113,7 @@ class ShopService
             $required = $item->getRequiredItem();
 
             if (!$user->hasItem($required)) {
-                return [
-                    'error' => "Vous devez posséder « {$required->getName()} » avant d’acheter cet article."
-                ];
+                throw new EconomyException("Vous devez posséder « __{$required->getName()}__ » avant d’acheter cet article.", Response::HTTP_BAD_REQUEST);
             }
 
             $requiredInventory = $user->getInventoryForItem($required);

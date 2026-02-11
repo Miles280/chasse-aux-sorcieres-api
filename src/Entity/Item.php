@@ -10,6 +10,7 @@ use Doctrine\ORM\Mapping as ORM;
 use ApiPlatform\Metadata\ApiResource;
 use Symfony\Component\Serializer\Annotation\Groups;
 use Symfony\Component\Serializer\Annotation\MaxDepth;
+use Gedmo\Mapping\Annotation as Gedmo;
 
 #[ORM\Entity(repositoryClass: ItemRepository::class)]
 #[ApiResource(
@@ -61,9 +62,10 @@ class Item
     #[Groups(['item:read', 'item:write','inventory:read'])]
     private ?string $requiredRoleId = null;
 
-    #[ORM\Column]
+    #[Gedmo\SortablePosition]
+    #[ORM\Column(type: 'integer')]
     #[Groups(['item:read', 'item:write','inventory:read'])]
-    private ?int $position = null;
+    private int $position = 0;
 
     #[ORM\Column(nullable: true)]
     private ?int $purchaseLimit = null;

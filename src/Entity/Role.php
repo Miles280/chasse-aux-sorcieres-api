@@ -52,6 +52,7 @@ class Role
      */
     #[ORM\OneToMany(targetEntity: Power::class, mappedBy: 'role', orphanRemoval: true)]
     #[Groups(['role:read', 'role:write'])]
+    #[ORM\OrderBy(['position' => 'ASC'])]
     private Collection $powers;
 
     // --- CHANGEMENT ICI : Stockage JSON pour les alignements multiples ---
@@ -157,33 +158,39 @@ class Role
         return $this;
     }
 
-    // --- Gestion des Alignements (Collection d'Enums en JSON) ---
+// --- Gestion des Alignements (Stockage JSON) ---
 
     /**
-     * Retourne un tableau d'objets Enum Alignment
-     * @return Alignment[]
+     * @return string[]
      */
+    #[Groups(['role:read'])]
     public function getAlignments(): array
     {
-        // On transforme les strings stockées en base en objets Enum
-        return array_map(fn($val) => Alignment::tryFrom($val), $this->alignments);
+        return array_values($this->alignments);
     }
 
     /**
-     * @param Alignment[] $alignments
+     * @param string[] $alignments
      */
+    #[Groups(['role:write'])]
     public function setAlignments(array $alignments): static
     {
-        // On transforme les objets Enum en strings pour la base de données
-        $this->alignments = array_map(
-            fn(Alignment $alignment) => $alignment->value, 
-            $alignments
-        );
+        $this->alignments = [];
+        foreach ($alignments as $val) {
+            // On valide que c'est bien une valeur de notre Enum
+            $stringValue = ($val instanceof Alignment) ? $val->value : $val;
+            if (is_string($stringValue) && Alignment::tryFrom($stringValue)) {
+                $this->alignments[] = $stringValue;
+            }
+        }
+        $this->alignments = array_values(array_unique($this->alignments));
         return $this;
     }
 
-    // Helper pour ajouter un seul alignement facilement via le code
-    public function addAlignment(Alignment $alignment): static
+    // 2. IMPORTANT : On renomme les helpers pour casser la détection automatique "Singulier/Pluriel"
+    // Symfony ne fera plus le lien entre "alignments" et ces méthodes.
+    
+    public function pushAlignment(Alignment $alignment): static
     {
         if (!in_array($alignment->value, $this->alignments)) {
             $this->alignments[] = $alignment->value;
@@ -191,15 +198,19 @@ class Role
         return $this;
     }
 
-    // Helper pour supprimer un alignement
-    public function removeAlignment(Alignment $alignment): static
+    public function dropAlignment(Alignment $alignment): static
     {
         $index = array_search($alignment->value, $this->alignments);
         if ($index !== false) {
             unset($this->alignments[$index]);
-            // Réindexe le tableau pour éviter les trous (0, 2, 3...)
             $this->alignments = array_values($this->alignments);
         }
         return $this;
+    }
+
+    // Un petit helper utile pour ton code PHP (si besoin de comparer des objets)
+    public function hasAlignment(Alignment $alignment): bool
+    {
+        return in_array($alignment->value, $this->alignments);
     }
 }

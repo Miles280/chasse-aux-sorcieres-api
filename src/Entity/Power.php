@@ -7,6 +7,7 @@ use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use ApiPlatform\Metadata\ApiResource;
 use Symfony\Component\Serializer\Annotation\Groups;
+use Gedmo\Mapping\Annotation as Gedmo;
 
 #[ORM\Entity(repositoryClass: PowerRepository::class)]
 #[ApiResource(
@@ -41,16 +42,19 @@ class Power
     #[Groups(['power:read', 'power:write', 'role:read', 'role:write'])]
     private ?int $usageLimit = null;
     
-    #[ORM\Column]
+    #[Gedmo\SortablePosition]
+    #[ORM\Column(type: 'integer')]
     #[Groups(['power:read', 'power:write', 'role:read', 'role:write'])]
-    private ?int $position = null;
+    private int $position = 0;
     
     #[ORM\Column]
     #[Groups(['power:read', 'power:write', 'role:read', 'role:write'])]
     private ?bool $leavingHouse = false;
     
+    #[Gedmo\SortableGroup]
     #[ORM\ManyToOne(inversedBy: 'powers')]
     #[ORM\JoinColumn(nullable: false)]
+    #[Groups(['power:read', 'power:write'])]
     private ?Role $role = null;
 
     public function getId(): ?int

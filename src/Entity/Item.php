@@ -123,12 +123,12 @@ class Item
         return $this;
     }
 
-    public function getType(): ?itemType
+    public function getType(): ?ItemType
     {
         return $this->type;
     }
 
-    public function setType(itemType $type): static
+    public function setType(ItemType $type): static
     {
         $this->type = $type;
 

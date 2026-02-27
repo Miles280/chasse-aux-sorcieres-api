@@ -70,6 +70,10 @@ class Item
     #[ORM\Column(nullable: true)]
     private ?int $purchaseLimit = null;
 
+    #[ORM\Column(nullable: true)]
+    #[Groups(['item:read','item:write'])]
+    private ?int $socialRankLevel = null;
+
     public function getId(): ?int
     {
         return $this->id;
@@ -203,6 +207,18 @@ class Item
     public function setPurchaseLimit(?int $purchaseLimit): static
     {
         $this->purchaseLimit = $purchaseLimit;
+
+        return $this;
+    }
+
+    public function getSocialRankLevel(): ?int
+    {
+        return $this->socialRankLevel;
+    }
+
+    public function setSocialRankLevel(?int $socialRankLevel): static
+    {
+        $this->socialRankLevel = $socialRankLevel;
 
         return $this;
     }

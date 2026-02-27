@@ -2,11 +2,14 @@
 
 namespace App\Service;
 
+use App\Entity\Item;
 use App\Entity\User;
 use App\Entity\Transaction;
 use App\Enum\Currency;
 use App\Enum\TransactionType;
 use App\Exception\EconomyException;
+use App\Repository\ConversionRateRepository;
+use App\Repository\ItemRepository;
 use App\Repository\TransactionRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\Response;
@@ -17,7 +20,9 @@ class EconomyService
 
     public function __construct(
         private EntityManagerInterface $em,
-        private TransactionRepository $transactionRepository
+        private TransactionRepository $transactionRepository,
+        private ConversionRateRepository $conversionRateRepository,
+        private ItemRepository $itemRepository
     ) {}
 
     /**
@@ -143,5 +148,156 @@ class EconomyService
             'relatedUserId' => $t->getRelatedUser()?->getDiscordId(),
             'createdAt' => $t->getCreatedAt()->getTimestamp(),
         ], $transactions);
+    }
+
+    public function convertGemsToRubies(User $user, int $amount): array
+    {
+        if ($user->getGems() < $amount) {
+            throw new EconomyException(
+                'Vous n\'avez pas assez de gemmes.',
+                Response::HTTP_BAD_REQUEST
+            );
+        }
+
+        // Récupérer rang social 
+        $data = $this->getUserHighestSocialRankData($user);
+
+        $socialRankLevel = $data['rank'];
+        $socialRoleId = $data['roleId'];
+
+        // Calcul du taux
+        $rate = $this->getConversionRateForRank($socialRankLevel);
+
+        $rubiesEarned = $amount * $rate;
+
+        // Sauvegarde ancien solde
+        $oldGems = $user->getGems();
+        $oldRubies = $user->getRubies();
+
+        // Mise à jour soldes
+        $user->setGems($oldGems - $amount);
+        $user->setRubies($oldRubies + $rubiesEarned);
+
+        $this->em->flush();
+
+        // Transaction
+        $this->createTransaction(
+            TransactionType::CONVERT,
+            'gems',
+            -$amount,
+            $user,
+        );
+
+        $this->createTransaction(
+            TransactionType::CONVERT,
+            'rubies',
+            $rubiesEarned,
+            $user,
+        );
+
+        return [
+            'roleId' => $socialRoleId,
+            'rate' => $rate,
+            'converted' => $amount,
+            'rubiesEarned' => $rubiesEarned,
+            'previous' => [
+                'gems' => $oldGems,
+                'rubies' => $oldRubies
+            ],
+            'current' => [
+                'gems' => $user->getGems(),
+                'rubies' => $user->getRubies()
+            ]
+        ];
+    }
+
+    private function getUserHighestSocialRankData(User $user): array
+    {
+        $highestRank = null;
+        $highestRoleId = null;
+
+        foreach ($user->getInventories() as $inventory) {
+
+            $item = $inventory->getItem();
+
+            if ($item->getSocialRankLevel() === null || $inventory->getQuantity() <= 0) {
+                continue;
+            }
+
+            $rank = $item->getSocialRankLevel();
+
+            if ($highestRank === null || $rank > $highestRank) {
+                $highestRank = $rank;
+                $highestRoleId = $item->getDiscordRoleId();
+            }
+        }
+
+        return [
+            'rank' => $highestRank,
+            'roleId' => $highestRoleId
+        ];
+    }
+
+    private function getConversionRateForRank(?int $rank): float
+    {
+        if ($rank === null) {
+            return 5;
+        }
+
+        $rate = $this->conversionRateRepository->findBestRateForRank($rank);
+
+        return $rate?->getGemToRubyRate() ?? 5;
+    }
+
+    public function getConversionRatesOverview(User $user): array
+    {
+        // Récupération du plus haut rang du joueur 
+        $rankData = $this->getUserHighestSocialRankData($user);
+        $highestRank = $rankData['rank'];
+
+        // Tous les taux
+        $rateEntities = $this->conversionRateRepository->findBy(
+            [],
+            ['socialRankLevel' => 'ASC']
+        );
+
+        // Tous les items qui sont des rangs sociaux
+        $rankItems = $this->itemRepository->findAllSocialRanks();
+
+        // Mapping rankLevel => roleId
+        $rankRoleMap = [];
+        foreach ($rankItems as $item) {
+            $rankRoleMap[$item->getSocialRankLevel()] = $item->getDiscordRoleId();
+        }
+
+        $rates = [];
+        $currentRoleId = null;
+        $currentRate = null;
+
+        foreach ($rateEntities as $rate) {
+
+            $rankLevel = $rate->getSocialRankLevel();
+            $rateValue = $rate->getGemToRubyRate();
+            $roleId = $rankRoleMap[$rankLevel] ?? null;
+
+            $isCurrent = $highestRank !== null && $rankLevel === $highestRank;
+
+            if ($isCurrent) {
+                $currentRoleId = $roleId;
+                $currentRate = $rateValue;
+            }
+
+            $rates[] = [
+                'roleId' => $roleId,
+                'rate' => $rateValue,
+                'isCurrent' => $isCurrent,
+            ];
+        }
+
+        return [
+            'currentRoleId' => $currentRoleId,
+            'currentRate'   => $currentRate,
+            'rates' => $rates,
+        ];
     }
 }

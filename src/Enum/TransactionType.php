@@ -13,6 +13,6 @@ enum TransactionType: string
     case PURCHASE = 'purchase';
     case SELL = 'sell';
     case SET = 'set';
-    case CONVERSION = 'conversion';
+    case CONVERT = 'convert';
     case CASINO = 'casino';
 }

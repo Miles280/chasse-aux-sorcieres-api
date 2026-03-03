@@ -309,4 +309,70 @@ final class EconomyController extends AbstractBotController
             return $this->errorResponse("Erreur interne du serveur.", Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
+
+    #[Route('/convert', name: 'app_bot_economy_convert', methods: ['POST'])]
+    public function convert(Request $request, RequestPayloadService $payloadService): JsonResponse
+    {
+        try {
+            // Extraction et validation des données JSON envoyées par le bot
+            $payload = $payloadService->extractValidatedPayload(
+                $request,
+                ['discordId', 'amount']
+            );
+
+            $discordId = $payload['discordId'];
+            $amount = (int) $payload['amount'];
+
+            if ($amount <= 0) {
+                throw new EconomyException(
+                    'Le montant doit être supérieur à 0.',
+                    Response::HTTP_BAD_REQUEST
+                );
+            }
+
+            // Récupération de l'utilisateur
+            $user = $this->discordUserService->findOrCreateUserByDiscordId($discordId);
+
+            // Délégation complète au service
+            $result = $this->economyService->convertGemsToRubies($user, $amount);
+
+            return $this->successResponse($result);
+
+        } catch (InvalidPayloadException $e) {
+            return $this->errorResponse(
+                $e->getMessage(),
+                Response::HTTP_BAD_REQUEST
+            );
+        } catch (EconomyException $e) {
+            $statusCode = $e->getCode() ?: Response::HTTP_BAD_REQUEST;
+
+            return $this->errorResponse(
+                $e->getMessage(),
+                $statusCode
+            );
+        } catch (\Throwable $e) {
+            return $this->errorResponse(
+                "Erreur interne du serveur.",
+                Response::HTTP_INTERNAL_SERVER_ERROR
+            );
+        }
+    }
+
+    #[Route('/rates/{discordId}', name: 'app_bot_economy_rates', methods: ['GET'])]
+    public function rates(string $discordId): JsonResponse
+    {
+        try {
+            $user = $this->discordUserService->findOrCreateUserByDiscordId($discordId);
+
+            $overview = $this->economyService->getConversionRatesOverview($user);
+
+            return $this->successResponse($overview);
+
+        } catch (\Throwable $e) {
+            return $this->errorResponse(
+                "Erreur interne du serveur.",
+                Response::HTTP_INTERNAL_SERVER_ERROR
+            );
+        }
+    }
 }

@@ -16,6 +16,14 @@ class ItemRepository extends ServiceEntityRepository
         parent::__construct($registry, Item::class);
     }
 
+    public function findAllSocialRanks(): array
+    {
+        return $this->createQueryBuilder('i')
+            ->where('i.socialRankLevel IS NOT NULL')
+            ->getQuery()
+            ->getResult();
+    }
+
     //    /**
     //     * @return Item[] Returns an array of Item objects
     //     */

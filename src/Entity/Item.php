@@ -10,6 +10,7 @@ use Doctrine\ORM\Mapping as ORM;
 use ApiPlatform\Metadata\ApiResource;
 use Symfony\Component\Serializer\Annotation\Groups;
 use Symfony\Component\Serializer\Annotation\MaxDepth;
+use Gedmo\Mapping\Annotation as Gedmo;
 
 #[ORM\Entity(repositoryClass: ItemRepository::class)]
 #[ApiResource(
@@ -61,12 +62,17 @@ class Item
     #[Groups(['item:read', 'item:write','inventory:read'])]
     private ?string $requiredRoleId = null;
 
-    #[ORM\Column]
+    #[Gedmo\SortablePosition]
+    #[ORM\Column(type: 'integer')]
     #[Groups(['item:read', 'item:write','inventory:read'])]
-    private ?int $position = null;
+    private int $position = 0;
 
     #[ORM\Column(nullable: true)]
     private ?int $purchaseLimit = null;
+
+    #[ORM\Column(nullable: true)]
+    #[Groups(['item:read','item:write'])]
+    private ?int $socialRankLevel = null;
 
     public function getId(): ?int
     {
@@ -121,12 +127,12 @@ class Item
         return $this;
     }
 
-    public function getType(): ?itemType
+    public function getType(): ?ItemType
     {
         return $this->type;
     }
 
-    public function setType(itemType $type): static
+    public function setType(ItemType $type): static
     {
         $this->type = $type;
 
@@ -201,6 +207,18 @@ class Item
     public function setPurchaseLimit(?int $purchaseLimit): static
     {
         $this->purchaseLimit = $purchaseLimit;
+
+        return $this;
+    }
+
+    public function getSocialRankLevel(): ?int
+    {
+        return $this->socialRankLevel;
+    }
+
+    public function setSocialRankLevel(?int $socialRankLevel): static
+    {
+        $this->socialRankLevel = $socialRankLevel;
 
         return $this;
     }

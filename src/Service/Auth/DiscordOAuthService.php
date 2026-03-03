@@ -21,8 +21,6 @@ class DiscordOAuthService
 
     public function getAccessToken(string $code): array
     {
-        // tempo pour debug
-        error_log("DEBUG DISCORD URI: '|" . $this->redirectUri . "|'");
         try {
             $response = $this->httpClient->request('POST', 'https://discord.com/api/oauth2/token', [
                 'headers' => [

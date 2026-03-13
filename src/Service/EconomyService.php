@@ -47,13 +47,7 @@ class EconomyService
     /**
      * Crée et enregistre une transaction.
      */
-    public function createTransaction(
-        TransactionType $type,
-        string $currency,
-        float $amount,
-        User $owner,
-        ?User $relatedUser = null,
-        ?string $description = null
+    public function createTransaction(TransactionType $type, string $currency, float $amount, User $owner, ?User $relatedUser = null, ?string $description = null
     ): Transaction {
         $transaction = new Transaction();
         $transaction
@@ -298,6 +292,59 @@ class EconomyService
             'currentRoleId' => $currentRoleId,
             'currentRate'   => $currentRate,
             'rates' => $rates,
+        ];
+    }
+
+    /**
+     * Récupère le classement des joueurs selon la monnaie spécifiée (paginé).
+     */
+    public function getLeaderboard(string $currency, int $page = 1, int $limit = self::DEFAULT_PAGE_LIMIT): array
+    {
+        $page = max(1, $page);
+        $offset = ($page - 1) * $limit;
+
+        $userRepo = $this->em->getRepository(User::class);
+        $qb = $userRepo->createQueryBuilder('u');
+
+        // On trie en fonction de la monnaie demandée
+        if ($currency === 'gems') {
+            $qb->orderBy('u.gems', 'DESC');
+            $qb->where('u.gems > 0'); 
+        } else {
+            $qb->orderBy('u.rubies', 'DESC');
+            $qb->where('u.rubies > 0');
+        }
+
+        // Pagination
+        $qb->setMaxResults($limit)
+           ->setFirstResult($offset);
+
+        /** @var User[] $users */
+        $users = $qb->getQuery()->getResult();
+
+        // Requête pour compter le total d'utilisateurs (pour la pagination du bot)
+        $countQb = $userRepo->createQueryBuilder('u')->select('count(u.id)');
+        if ($currency === 'gems') {
+            $countQb->where('u.gems > 0');
+        } else {
+            $countQb->where('u.rubies > 0');
+        }
+        $totalCount = (int) $countQb->getQuery()->getSingleScalarResult();
+
+        // Formatage des données de retour
+        $formattedUsers = array_map(fn(User $u) => [
+            'discordId' => $u->getDiscordId(),
+            'gems'      => $u->getGems(),
+            'rubies'    => $u->getRubies(),
+        ], $users);
+
+        return [
+            'users' => $formattedUsers,
+            'pagination' => [
+                'currentPage' => $page,
+                'totalPages'  => max(1, ceil($totalCount / $limit)),
+                'totalItems'  => $totalCount
+            ]
         ];
     }
 }

@@ -125,5 +125,47 @@ class InventoryService
             'message' => "<@{$buyer->getDiscordId()}> a acheté l'item « __{$item->getName()}__ » de <@{$seller->getDiscordId()}>.",
         ];
     }
+
+    public function manageItem(User $user, Item $item, string $action): array
+    {
+        $inventory = $user->getInventoryForItem($item);
+
+        if ($action === 'add') {
+            if ($inventory) {
+                $inventory->setQuantity($inventory->getQuantity() + 1);
+            } else {
+                $inventory = new Inventory();
+                $inventory->setOwner($user);
+                $inventory->setItem($item);
+                $inventory->setQuantity(1);
+
+                $this->em->persist($inventory);
+            }
+
+            $finalQuantity = $inventory->getQuantity();
+        } elseif ($action === 'remove') {
+            if (!$inventory) {
+                throw new EconomyException("Le joueur ne possède pas cet item.");
+            }
+
+            if ($inventory->getQuantity() > 1) {
+                $inventory->setQuantity($inventory->getQuantity() - 1);
+                $finalQuantity = $inventory->getQuantity();
+            } else {
+                $finalQuantity = 0;
+                $this->em->remove($inventory);
+            }
+        } else {
+            throw new EconomyException("Action invalide.");
+        }
+
+        $this->em->flush();
+
+        $actionText = $action === 'add' ? 'ajouté' : 'retiré';
+
+        return [
+            'message' => "Item « __{$item->getName()}__ » {$actionText} pour <@{$user->getDiscordId()}>.\nQuantité actuelle : {$finalQuantity}."
+        ];
+        }
 }
 

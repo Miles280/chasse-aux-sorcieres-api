@@ -375,4 +375,30 @@ final class EconomyController extends AbstractBotController
             );
         }
     }
+
+    #[Route('/leaderboard', name: 'app_bot_economy_leaderboard', methods: ['GET'])]
+    public function leaderboard(Request $request): JsonResponse
+    {
+        try {
+            // Récupération des paramètres envoyés par le bot
+            $page = max(1, (int) $request->query->get('page', 1));
+            $currency = $request->query->get('currency', 'gems'); // Par défaut on affiche les gemmes
+
+            // Vérification de la monnaie
+            if (!in_array($currency, ['gems', 'rubies'], true)) {
+                throw new EconomyException("Monnaie invalide pour le classement.", Response::HTTP_BAD_REQUEST);
+            }
+
+            // Appel au service pour récupérer le classement
+            $leaderboard = $this->economyService->getLeaderboard($currency, $page);
+
+            return $this->successResponse($leaderboard);
+
+        } catch (EconomyException $e) {
+            $statusCode = $e->getCode() ?: Response::HTTP_BAD_REQUEST;
+            return $this->errorResponse($e->getMessage(), $statusCode);
+        } catch (\Throwable $e) {
+            return $this->errorResponse("Erreur interne du serveur.", Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
 }

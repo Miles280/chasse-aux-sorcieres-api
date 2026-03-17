@@ -75,4 +75,38 @@ final class InventoryController extends AbstractBotController
             return $this->errorResponse("Erreur interne du serveur.", Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
+
+    #[Route('/manage', name: 'app_bot_inventory_manage', methods: ['POST'])]
+    public function manage(Request $request, RequestPayloadService $payloadService): JsonResponse
+    {
+        try {
+            $payload = $payloadService->extractValidatedPayload(
+                $request,
+                ['discordId', 'itemId', 'action']
+            );
+
+            $user = $this->discordUserService->findOrCreateUserByDiscordId($payload['discordId']);
+            $item = $this->em->getRepository(Item::class)->find($payload['itemId']);
+
+            if (!$item) {
+                throw new EconomyException('Item introuvable.', Response::HTTP_NOT_FOUND);
+            }
+
+            $result = $this->inventoryService->manageItem(
+                $user,
+                $item,
+                $payload['action']
+            );
+
+            return $this->successResponse($result);
+
+        } catch (InvalidPayloadException $e) {
+            return $this->errorResponse($e->getMessage(), Response::HTTP_BAD_REQUEST);
+        } catch (EconomyException $e) {
+            $statusCode = $e->getCode() ?: Response::HTTP_BAD_REQUEST;
+            return $this->errorResponse($e->getMessage(), $statusCode);
+        } catch (\Throwable $e) {
+            return $this->errorResponse("Erreur interne du serveur.", Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
 }

@@ -47,13 +47,7 @@ class EconomyService
     /**
      * Crée et enregistre une transaction.
      */
-    public function createTransaction(
-        TransactionType $type,
-        string $currency,
-        float $amount,
-        User $owner,
-        ?User $relatedUser = null,
-        ?string $description = null
+    public function createTransaction(TransactionType $type, string $currency, float $amount, User $owner, ?User $relatedUser = null, ?string $description = null
     ): Transaction {
         $transaction = new Transaction();
         $transaction
@@ -298,6 +292,59 @@ class EconomyService
             'currentRoleId' => $currentRoleId,
             'currentRate'   => $currentRate,
             'rates' => $rates,
+        ];
+    }
+
+    /**
+     * Récupère le classement des joueurs selon la monnaie spécifiée (paginé).
+     */
+    public function getLeaderboard(string $currency, int $page = 1, int $limit = self::DEFAULT_PAGE_LIMIT): array
+    {
+        $userRepo = $this->em->getRepository(User::class);
+
+        // 1. On compte d'abord le total pour valider la page
+        $countQb = $userRepo->createQueryBuilder('u')->select('count(u.id)');
+        if ($currency === 'gems') {
+            $countQb->where('u.gems > 0');
+        } else {
+            $countQb->where('u.rubies > 0');
+        }
+        
+        $totalCount = (int) $countQb->getQuery()->getSingleScalarResult();
+        $totalPages = (int) max(1, ceil($totalCount / $limit));
+
+        // 2. Ajustement de la page : On s'assure de ne pas dépasser totalPages
+        // Si page = 3 et totalPages = 2, $page devient 2.
+        $page = max(1, min($page, $totalPages));
+        $offset = ($page - 1) * $limit;
+
+        // 3. Requête principale avec l'offset corrigé
+        $qb = $userRepo->createQueryBuilder('u');
+        if ($currency === 'gems') {
+            $qb->where('u.gems > 0')->orderBy('u.gems', 'DESC');
+        } else {
+            $qb->where('u.rubies > 0')->orderBy('u.rubies', 'DESC');
+        }
+
+        $qb->setMaxResults($limit)->setFirstResult($offset);
+
+        /** @var User[] $users */
+        $users = $qb->getQuery()->getResult();
+
+        // 4. Formatage
+        $formattedUsers = array_map(fn(User $u) => [
+            'discordId' => $u->getDiscordId(),
+            'gems'      => $u->getGems(),
+            'rubies'    => $u->getRubies(),
+        ], $users);
+
+        return [
+            'users' => $formattedUsers,
+            'pagination' => [
+                'currentPage' => $page, // On renvoie la page ajustée
+                'totalPages'  => $totalPages,
+                'totalItems'  => $totalCount
+            ]
         ];
     }
 }

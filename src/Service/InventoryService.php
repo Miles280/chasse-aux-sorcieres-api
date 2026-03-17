@@ -131,7 +131,6 @@ class InventoryService
         $inventory = $user->getInventoryForItem($item);
 
         if ($action === 'add') {
-
             if ($inventory) {
                 $inventory->setQuantity($inventory->getQuantity() + 1);
             } else {
@@ -143,27 +142,30 @@ class InventoryService
                 $this->em->persist($inventory);
             }
 
+            $finalQuantity = $inventory->getQuantity();
         } elseif ($action === 'remove') {
-
             if (!$inventory) {
                 throw new EconomyException("Le joueur ne possède pas cet item.");
             }
 
             if ($inventory->getQuantity() > 1) {
                 $inventory->setQuantity($inventory->getQuantity() - 1);
+                $finalQuantity = $inventory->getQuantity();
             } else {
+                $finalQuantity = 0;
                 $this->em->remove($inventory);
             }
-
         } else {
             throw new EconomyException("Action invalide.");
         }
 
         $this->em->flush();
 
+        $actionText = $action === 'add' ? 'ajouté' : 'retiré';
+
         return [
-            'message' => "Inventaire mis à jour pour <@{$user->getDiscordId()}>."
+            'message' => "Item « __{$item->getName()}__ » {$actionText} pour <@{$user->getDiscordId()}>.\nQuantité actuelle : {$finalQuantity}."
         ];
-    }
+        }
 }
 

@@ -21,6 +21,12 @@ security:
       custom_authenticators:
         - App\Security\BotKeyAuthenticator
 
+    api:
+      pattern: ^/api
+      stateless: true
+      provider: app_user_provider
+      jwt: ~
+
     # 🔸 Firewall pour les USERS (auth Discord)
     main:
       stateless: true

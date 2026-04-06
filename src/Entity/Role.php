@@ -10,10 +10,22 @@ use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use ApiPlatform\Metadata\ApiResource;
+use ApiPlatform\Metadata\Delete;
+use ApiPlatform\Metadata\Get;
+use ApiPlatform\Metadata\GetCollection;
+use ApiPlatform\Metadata\Patch;
+use ApiPlatform\Metadata\Post;
 use Symfony\Component\Serializer\Annotation\Groups;
 
 #[ORM\Entity(repositoryClass: RoleRepository::class)]
 #[ApiResource(
+    operations: [
+        new GetCollection(),
+        new Get(),
+        new Post(security: "is_granted('ROLE_CREATE')"),
+        new Patch(security: "is_granted('ROLE_EDIT', object)"),
+        new Delete(security: "is_granted('ROLE_DELETE', object)"),
+    ],
     normalizationContext: ['groups' => ['role:read']],
     denormalizationContext: ['groups' => ['role:write']],
 )]
@@ -50,7 +62,7 @@ class Role
     /**
      * @var Collection<int, Power>
      */
-    #[ORM\OneToMany(targetEntity: Power::class, mappedBy: 'role', orphanRemoval: true)]
+    #[ORM\OneToMany(targetEntity: Power::class, mappedBy: 'role', orphanRemoval: true, cascade: ['persist'])]
     #[Groups(['role:read', 'role:write'])]
     #[ORM\OrderBy(['position' => 'ASC'])]
     private Collection $powers;

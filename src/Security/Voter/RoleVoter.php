@@ -42,8 +42,8 @@ class RoleVoter extends Voter
         try {
             $this->roleSync->syncUserRoles($user);
         } catch (\Exception $e) {
-            // Optionnel : log l'erreur si l'API Discord est down
-            // On peut décider de laisser passer ou de bloquer si la synchro échoue
+            dump($e);
+            return false;
         }
 
         // 3. On vérifie les nouveaux rôles synchronisés

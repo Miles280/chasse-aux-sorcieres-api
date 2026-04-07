@@ -49,15 +49,17 @@ class Role
     #[Groups(['role:read', 'role:write'])]
     private ?int $minPlayer = null;
 
-    // --- CHANGEMENT ICI : On utilise l'Enum directement ---
     #[ORM\Column(type: 'string', enumType: Camp::class)]
     #[Groups(['role:read', 'role:write'])]
     private ?Camp $camp = null;
 
-    // Je suppose que Goal reste une entité ? Sinon il faut faire pareil.
-    #[ORM\ManyToOne]
+    #[ORM\Column(type: Types::TEXT, nullable: true)]
     #[Groups(['role:read', 'role:write'])]
-    private ?Goal $goal = null;
+    private ?string $goal = null;
+
+    #[ORM\Column(type: Types::TEXT, nullable: true)] 
+    #[Groups(['role:read', 'role:write'])]
+    private ?string $notes = null;
 
     /**
      * @var Collection<int, Power>
@@ -67,7 +69,6 @@ class Role
     #[ORM\OrderBy(['position' => 'ASC'])]
     private Collection $powers;
 
-    // --- CHANGEMENT ICI : Stockage JSON pour les alignements multiples ---
     /**
      * @var string[] On stocke les valeurs (strings) en base
      */
@@ -78,7 +79,6 @@ class Role
     public function __construct()
     {
         $this->powers = new ArrayCollection();
-        // Plus besoin d'initialiser alignment comme ArrayCollection, c'est un array natif []
     }
 
     public function getId(): ?int
@@ -119,8 +119,6 @@ class Role
         return $this;
     }
 
-    // --- Gestion du Camp (Enum simple) ---
-
     public function getCamp(): ?Camp
     {
         return $this->camp;
@@ -132,14 +130,25 @@ class Role
         return $this;
     }
 
-    public function getGoal(): ?Goal
+    public function getGoal(): ?string
     {
         return $this->goal;
     }
 
-    public function setGoal(?Goal $goal): static
+    public function setGoal(?string $goal): static
     {
         $this->goal = $goal;
+        return $this;
+    }
+
+    public function getNotes(): ?string
+    {
+        return $this->notes;
+    }
+
+    public function setNotes(?string $notes): static
+    {
+        $this->notes = $notes;
         return $this;
     }
 
@@ -170,8 +179,6 @@ class Role
         return $this;
     }
 
-// --- Gestion des Alignements (Stockage JSON) ---
-
     /**
      * @return string[]
      */
@@ -198,9 +205,6 @@ class Role
         $this->alignments = array_values(array_unique($this->alignments));
         return $this;
     }
-
-    // 2. IMPORTANT : On renomme les helpers pour casser la détection automatique "Singulier/Pluriel"
-    // Symfony ne fera plus le lien entre "alignments" et ces méthodes.
     
     public function pushAlignment(Alignment $alignment): static
     {
@@ -220,7 +224,6 @@ class Role
         return $this;
     }
 
-    // Un petit helper utile pour ton code PHP (si besoin de comparer des objets)
     public function hasAlignment(Alignment $alignment): bool
     {
         return in_array($alignment->value, $this->alignments);

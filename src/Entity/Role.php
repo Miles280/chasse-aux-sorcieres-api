@@ -10,10 +10,22 @@ use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use ApiPlatform\Metadata\ApiResource;
+use ApiPlatform\Metadata\Delete;
+use ApiPlatform\Metadata\Get;
+use ApiPlatform\Metadata\GetCollection;
+use ApiPlatform\Metadata\Patch;
+use ApiPlatform\Metadata\Post;
 use Symfony\Component\Serializer\Annotation\Groups;
 
 #[ORM\Entity(repositoryClass: RoleRepository::class)]
 #[ApiResource(
+    operations: [
+        new GetCollection(),
+        new Get(),
+        new Post(security: "is_granted('ROLE_CREATE')"),
+        new Patch(security: "is_granted('ROLE_EDIT', object)"),
+        new Delete(security: "is_granted('ROLE_DELETE', object)"),
+    ],
     normalizationContext: ['groups' => ['role:read']],
     denormalizationContext: ['groups' => ['role:write']],
 )]
@@ -37,25 +49,30 @@ class Role
     #[Groups(['role:read', 'role:write'])]
     private ?int $minPlayer = null;
 
-    // --- CHANGEMENT ICI : On utilise l'Enum directement ---
     #[ORM\Column(type: 'string', enumType: Camp::class)]
     #[Groups(['role:read', 'role:write'])]
     private ?Camp $camp = null;
 
-    // Je suppose que Goal reste une entité ? Sinon il faut faire pareil.
-    #[ORM\ManyToOne]
+    #[ORM\Column(type: Types::TEXT, nullable: true)]
     #[Groups(['role:read', 'role:write'])]
-    private ?Goal $goal = null;
+    private ?string $goal = null;
+
+    #[ORM\Column(type: Types::TEXT, nullable: true)] 
+    #[Groups(['role:read', 'role:write'])]
+    private ?string $notes = null;
+
+    #[ORM\Column(length: 255, nullable: true)]
+    #[Groups(['role:read', 'role:write'])]
+    private ?string $imageUrl = null;
 
     /**
      * @var Collection<int, Power>
      */
-    #[ORM\OneToMany(targetEntity: Power::class, mappedBy: 'role', orphanRemoval: true)]
+    #[ORM\OneToMany(targetEntity: Power::class, mappedBy: 'role', orphanRemoval: true, cascade: ['persist'])]
     #[Groups(['role:read', 'role:write'])]
     #[ORM\OrderBy(['position' => 'ASC'])]
     private Collection $powers;
 
-    // --- CHANGEMENT ICI : Stockage JSON pour les alignements multiples ---
     /**
      * @var string[] On stocke les valeurs (strings) en base
      */
@@ -66,7 +83,6 @@ class Role
     public function __construct()
     {
         $this->powers = new ArrayCollection();
-        // Plus besoin d'initialiser alignment comme ArrayCollection, c'est un array natif []
     }
 
     public function getId(): ?int
@@ -107,8 +123,6 @@ class Role
         return $this;
     }
 
-    // --- Gestion du Camp (Enum simple) ---
-
     public function getCamp(): ?Camp
     {
         return $this->camp;
@@ -120,14 +134,36 @@ class Role
         return $this;
     }
 
-    public function getGoal(): ?Goal
+    public function getGoal(): ?string
     {
         return $this->goal;
     }
 
-    public function setGoal(?Goal $goal): static
+    public function setGoal(?string $goal): static
     {
         $this->goal = $goal;
+        return $this;
+    }
+
+    public function getNotes(): ?string
+    {
+        return $this->notes;
+    }
+
+    public function setNotes(?string $notes): static
+    {
+        $this->notes = $notes;
+        return $this;
+    }
+
+    public function getImageUrl(): ?string
+    {
+        return $this->imageUrl;
+    }
+
+    public function setImageUrl(?string $imageUrl): static
+    {
+        $this->imageUrl = $imageUrl;
         return $this;
     }
 
@@ -158,8 +194,6 @@ class Role
         return $this;
     }
 
-// --- Gestion des Alignements (Stockage JSON) ---
-
     /**
      * @return string[]
      */
@@ -186,9 +220,6 @@ class Role
         $this->alignments = array_values(array_unique($this->alignments));
         return $this;
     }
-
-    // 2. IMPORTANT : On renomme les helpers pour casser la détection automatique "Singulier/Pluriel"
-    // Symfony ne fera plus le lien entre "alignments" et ces méthodes.
     
     public function pushAlignment(Alignment $alignment): static
     {
@@ -208,7 +239,6 @@ class Role
         return $this;
     }
 
-    // Un petit helper utile pour ton code PHP (si besoin de comparer des objets)
     public function hasAlignment(Alignment $alignment): bool
     {
         return in_array($alignment->value, $this->alignments);

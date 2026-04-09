@@ -39,11 +39,11 @@ abstract class AbstractBotController extends AbstractController
     /**
      * Retourne une réponse de succès formatée pour le Bot
      */
-    protected function successResponse(mixed $data = null, int $status = 200): JsonResponse
+    protected function successResponse(mixed $data = null, int $status = 200, array $context = []): JsonResponse
     {
         return $this->json([
             'success' => true,
             'data'    => $data
-        ], $status);
+        ], $status, [], $context);
     }
 }

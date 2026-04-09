@@ -61,6 +61,10 @@ class Role
     #[Groups(['role:read', 'role:write'])]
     private ?string $notes = null;
 
+    #[ORM\Column(length: 255, nullable: true)]
+    #[Groups(['role:read', 'role:write'])]
+    private ?string $imageUrl = null;
+
     /**
      * @var Collection<int, Power>
      */
@@ -149,6 +153,17 @@ class Role
     public function setNotes(?string $notes): static
     {
         $this->notes = $notes;
+        return $this;
+    }
+
+    public function getImageUrl(): ?string
+    {
+        return $this->imageUrl;
+    }
+
+    public function setImageUrl(?string $imageUrl): static
+    {
+        $this->imageUrl = $imageUrl;
         return $this;
     }
 

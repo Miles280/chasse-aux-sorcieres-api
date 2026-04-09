@@ -6,8 +6,9 @@ use App\Repository\PowerRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use ApiPlatform\Metadata\ApiResource;
-use Symfony\Component\Serializer\Annotation\Groups;
 use Gedmo\Mapping\Annotation as Gedmo;
+use Symfony\Component\Serializer\Annotation\Groups;
+use Symfony\Component\Serializer\Annotation\SerializedName;
 
 #[ORM\Entity(repositoryClass: PowerRepository::class)]
 #[ApiResource(
@@ -31,10 +32,12 @@ class Power
     private ?string $description = null;
     
     #[ORM\Column]
+    #[SerializedName('isDayPower')]
     #[Groups(['power:read', 'power:write', 'role:read', 'role:write'])]
     private ?bool $isDayPower = false;
     
     #[ORM\Column]
+    #[SerializedName('isPassive')]
     #[Groups(['power:read', 'power:write', 'role:read', 'role:write'])]
     private ?bool $isPassive = false;
     

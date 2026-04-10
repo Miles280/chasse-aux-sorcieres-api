@@ -13,6 +13,11 @@ security:
       pattern: ^/(_(profiler|wdt)|css|images|js)/
       security: false
 
+    public_auth:
+      pattern: ^/api/auth/(login|refresh|logout)
+      stateless: true
+      security: false
+
     # 🔸 Firewall pour le BOT
     bot:
       pattern: ^/bot

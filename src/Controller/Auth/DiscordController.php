@@ -11,16 +11,25 @@ use Symfony\Component\HttpFoundation\Cookie;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[Route('/api/auth')]
 class DiscordController extends AbstractController
 {
+    // 🔥 NOUVEAU : Constantes pour la configuration du cookie
+    private const REFRESH_TOKEN_COOKIE_NAME = 'refreshToken';
+    private const REFRESH_TOKEN_LIFETIME = 30 * 24 * 60 * 60; // 30 jours
+    private const COOKIE_PATH = '/';
+
     private DiscordOAuthService $discordService;
     private JWTTokenManagerInterface $jwtManager;
     private DiscordUserManager $discordUserManager;
 
-    public function __construct(DiscordOAuthService $discordService, JWTTokenManagerInterface $jwtManager, DiscordUserManager $discordUserManager)
-    {
+    public function __construct(
+        DiscordOAuthService $discordService, 
+        JWTTokenManagerInterface $jwtManager, 
+        DiscordUserManager $discordUserManager
+    ) {
         $this->discordService = $discordService;
         $this->jwtManager = $jwtManager;
         $this->discordUserManager = $discordUserManager;
@@ -29,7 +38,6 @@ class DiscordController extends AbstractController
     #[Route('/login', name: 'app_auth_login', methods: ['POST'])]
     public function login(Request $request, RequestPayloadService $payloadService): JsonResponse
     {
-        // Extraction et validation des données JSON envoyées par le bot
         $payload = $payloadService->extractValidatedPayload($request, ['code']);
         if ($payload instanceof JsonResponse) return $payload;
         $code = $payload['code'];
@@ -64,84 +72,145 @@ class DiscordController extends AbstractController
         // 5. Création de la réponse avec le Cookie HttpOnly
         $response = new JsonResponse([
             'token' => $jwt,
-            // On NE renvoie PLUS le refreshToken dans le JSON
-            'user' => [ // Optionnel : renvoyer quelques infos utiles tout de suite
+            'user' => [
                 'username' => $user->getDiscordUsername(),
                 'roles' => $user->getRoles()
             ]
         ]);
 
-        $this->setRefreshTokenCookie($response, $jwtRefreshToken, $request->isSecure());
+        $this->setRefreshTokenCookie($response, $jwtRefreshToken, $request);
 
         return $response;
     }
 
     #[Route('/refresh', name: 'app_auth_refresh', methods: ['POST'])]
+    #[IsGranted('PUBLIC_ACCESS')]
     public function refresh(Request $request): JsonResponse
     {
-        // On récupère le refresh token directement depuis le COOKIE, pas le body
-        $refreshToken = $request->cookies->get('refreshToken');
+        // 🔥 AMÉLIORÉ : Debug pour identifier le problème
+        $refreshToken = $request->cookies->get(self::REFRESH_TOKEN_COOKIE_NAME);
 
+        // Debug : Lister tous les cookies reçus
+        $allCookies = $request->cookies->all();
+        
         if (!$refreshToken) {
-            // Cas 1 : Le navigateur n'a pas envoyé le cookie
-            return $this->json(['debug' => 'Cookie absent'], 401); 
+            return $this->json([
+                'error' => 'Cookie refresh token absent',
+                'debug' => [
+                    'cookies_recus' => array_keys($allCookies),
+                    'headers' => [
+                        'origin' => $request->headers->get('Origin'),
+                        'referer' => $request->headers->get('Referer'),
+                    ]
+                ]
+            ], 401);
         }
 
         $user = $this->discordUserManager->findUserByJwtRefreshToken($refreshToken);
 
         if (!$user) {
-            // Cas 2 : Le token dans le cookie ne correspond à rien en Base de Données
-            return $this->json(['debug' => 'Token inconnu en DB', 'token_recu' => $refreshToken], 401);
+            return $this->json([
+                'error' => 'Token inconnu en DB',
+                'debug' => 'Le refresh token ne correspond à aucun utilisateur'
+            ], 401);
         }
 
         if ($user->getJwtRefreshTokenExpiresAt() < new \DateTime()) {
-            // Cas 3 : Le token est trouvé, mais la date d'expiration en DB est passée
-            return $this->json(['debug' => 'Token expiré en DB'], 401);
+            return $this->json([
+                'error' => 'Token expiré',
+                'debug' => [
+                    'expire_le' => $user->getJwtRefreshTokenExpiresAt()->format('Y-m-d H:i:s'),
+                    'maintenant' => (new \DateTime())->format('Y-m-d H:i:s'),
+                ]
+            ], 401);
         }
 
         // Rotation des tokens
         $newJwt = $this->jwtManager->create($user);
         $newRefreshToken = bin2hex(random_bytes(64));
         
-        // Mise à jour en base
         $this->discordUserManager->updateJwtTokens($user, $newRefreshToken);
 
         $response = new JsonResponse([
             'token' => $newJwt
         ]);
 
-        // Mise à jour du cookie avec le nouveau token
-        $this->setRefreshTokenCookie($response, $newRefreshToken, $request->isSecure());
+        $this->setRefreshTokenCookie($response, $newRefreshToken, $request);
 
         return $response;
     }
 
     #[Route('/logout', name: 'app_auth_logout', methods: ['POST'])]
-    public function logout(): JsonResponse
+    public function logout(Request $request): JsonResponse
     {
         $response = $this->json(['message' => 'Logged out successfully']);
         
-        // On demande au navigateur de supprimer le cookie
-        $response->headers->clearCookie('refreshToken', '/', null, true, true, 'Lax'); // Assure-toi que les params matchent ceux de la création
+        // 🔥 CORRIGÉ : Utiliser les mêmes paramètres que pour la création du cookie
+        $this->clearRefreshTokenCookie($response, $request);
 
         return $response;
     }
 
     /**
-     * Méthode privée pour configurer le cookie de manière centralisée
+     * 🔥 AMÉLIORÉ : Configuration centralisée du cookie avec détection automatique du contexte
      */
-    private function setRefreshTokenCookie(JsonResponse $response, string $token, bool $isSecure): void
+    private function setRefreshTokenCookie(JsonResponse $response, string $token, Request $request): void
     {
+        $isSecure = $request->isSecure();
+        
+        // 🔥 IMPORTANT : En développement local, si le frontend et backend sont sur des ports différents,
+        // il faut utiliser SameSite=None avec Secure=true (même en HTTP localhost, Chrome l'accepte)
+        $sameSite = Cookie::SAMESITE_LAX;
+        
+        // Si on détecte un environnement cross-origin (différents ports/domaines)
+        $origin = $request->headers->get('Origin');
+        if ($origin && $origin !== $request->getSchemeAndHttpHost()) {
+            $sameSite = Cookie::SAMESITE_NONE;
+            // SameSite=None nécessite Secure=true
+            $isSecure = true;
+            // Note : En dev local, certains navigateurs acceptent SameSite=None sans Secure
+        }
+
         $cookie = Cookie::create(
-            'refreshToken',       // Nom
-            $token,               // Valeur
-            time() + (30 * 24 * 60 * 60), // Expiration (30 jours)
-            '/',                  // Path
-            null,                 // Domain (null = domaine courant)
-            $isSecure,            // Secure (True en prod HTTPS, False en dev HTTP)
-            true,                 // HttpOnly (C'est LA clé de la sécurité)
-            false,                // Raw
-            Cookie::SAMESITE_LAX  // SameSite (Lax est un bon compromis sécurité/ux)
+            self::REFRESH_TOKEN_COOKIE_NAME,
+            $token,
+            time() + self::REFRESH_TOKEN_LIFETIME,
+            self::COOKIE_PATH,
+            null, // Domain = null = domaine courant
+            $isSecure, // Secure
+            true, // HttpOnly (OBLIGATOIRE pour la sécurité)
+            false, // Raw
+            $sameSite
+        );
+
+        $response->headers->setCookie($cookie);
+    }
+
+    /**
+     * 🔥 NOUVEAU : Suppression correcte du cookie avec les mêmes paramètres
+     */
+    private function clearRefreshTokenCookie(JsonResponse $response, Request $request): void
+    {
+        $isSecure = $request->isSecure();
+        $sameSite = Cookie::SAMESITE_LAX;
+        
+        $origin = $request->headers->get('Origin');
+        if ($origin && $origin !== $request->getSchemeAndHttpHost()) {
+            $sameSite = Cookie::SAMESITE_NONE;
+            $isSecure = true;
+        }
+
+        // 🔥 IMPORTANT : Pour supprimer un cookie, il faut recréer le même cookie avec une date passée
+        $cookie = Cookie::create(
+            self::REFRESH_TOKEN_COOKIE_NAME,
+            '', // Valeur vide
+            time() - 3600, // Date dans le passé
+            self::COOKIE_PATH,
+            null,
+            $isSecure,
+            true,
+            false,
+            $sameSite
         );
 
         $response->headers->setCookie($cookie);

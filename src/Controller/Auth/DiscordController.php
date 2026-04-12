@@ -90,6 +90,23 @@ class DiscordController extends AbstractController
         // 🔥 AMÉLIORÉ : Debug pour identifier le problème
         $refreshToken = $request->cookies->get(self::REFRESH_TOKEN_COOKIE_NAME);
 
+        if (!$refreshToken) {
+            return $this->json(['error' => 'Navigateur n\'a pas envoyé le cookie'], 401);
+        }
+
+        $user = $this->discordUserManager->findUserByJwtRefreshToken($refreshToken);
+
+        if (!$user) {
+            return $this->json(['error' => 'Token reçu mais non trouvé en BDD'], 401);
+        }
+
+        if ($user->getJwtRefreshTokenExpiresAt() < new \DateTime()) {
+            return $this->json([
+                'error' => 'Token trouvé mais expiré en BDD',
+                'expires_at' => $user->getJwtRefreshTokenExpiresAt()->format('Y-m-d H:i:s')
+            ], 401);
+        }
+
         // Debug : Lister tous les cookies reçus
         $allCookies = $request->cookies->all();
         

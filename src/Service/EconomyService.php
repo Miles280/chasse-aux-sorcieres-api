@@ -347,4 +347,106 @@ class EconomyService
             ]
         ];
     }
+
+    public function getRoleMultiplier(User $user): float
+    {
+        $data = $this->getUserHighestSocialRankData($user);
+        $rank = $data['rank'];
+
+        if ($rank === null) {
+            return 1;
+        }
+
+        // 🔥 Scaling simple basé sur le rang
+        return match (true) {
+            $rank >= 10 => 2.5,
+            $rank >= 7  => 2.0,
+            $rank >= 5  => 1.6,
+            $rank >= 3  => 1.3,
+            default     => 1.1,
+        };
+    }
+
+    public function claimDaily(User $user): array
+    {
+        $cooldownRepo = $this->em->getRepository(\App\Entity\UserCooldown::class);
+
+        $cooldown = $cooldownRepo->findOneBy([
+            'user' => $user,
+            'activity' => 'daily'
+        ]);
+
+        $tzParis = new \DateTimeZone('Europe/Paris');
+        $tzUTC = new \DateTimeZone('UTC');
+
+        $nowUTC = new \DateTimeImmutable('now', $tzUTC);
+
+        $nowParis = $nowUTC->setTimezone($tzParis);
+        $todayParis = $nowParis->setTime(0, 0);
+
+        if ($cooldown) {
+            $lastParis = $cooldown->getLastUsedAt()->setTimezone($tzParis);
+            $lastDay = $lastParis->setTime(0, 0);
+
+            if ($lastDay == $todayParis) {
+                $nextReset = (clone $todayParis)->modify('+1 day');
+                $timestamp = $nextReset->getTimestamp();
+
+                throw new EconomyException(
+                    "Vous avez déjà récupéré votre récompense aujourd'hui.\nProchain daily <t:$timestamp:R>",
+                    Response::HTTP_BAD_REQUEST
+                );
+            }
+        } else {
+            $cooldown = new \App\Entity\UserCooldown();
+            $cooldown->setUser($user);
+            $cooldown->setActivity('daily');
+            $cooldown->setStreak(0);
+        }
+
+        $streak = 1;
+
+        if ($cooldown->getLastUsedAt()) {
+            $lastParis = $cooldown->getLastUsedAt()->setTimezone($tzParis);
+            $lastDay = $lastParis->setTime(0, 0);
+
+            $yesterday = $todayParis->modify('-1 day');
+
+            if ($lastDay == $yesterday) {
+                $streak = $cooldown->getStreak() + 1;
+            }
+        }
+
+        $cooldown->setStreak($streak);
+        $cooldown->setLastUsedAt($nowUTC); // 🔥 STOCKAGE UTC
+
+        $roleMultiplier = $this->getRoleMultiplier($user);
+
+        $base = 10;
+        $streakBonus = min(2, 1 + ($streak * 0.05));
+
+        $reward = (int) round($base * $roleMultiplier * $streakBonus);
+
+        $oldRubies = $user->getRubies();
+        $user->setRubies($oldRubies + $reward);
+
+        $this->createTransaction(
+            TransactionType::GAIN,
+            'rubies',
+            $reward,
+            $user,
+            null,
+            "Récompense journalière"
+        );
+
+        $this->em->persist($cooldown);
+        $this->em->flush();
+
+        return [
+            'reward' => $reward,
+            'streak' => $streak,
+            'previous' => $oldRubies,
+            'current' => $user->getRubies()
+        ];
+    }
 }

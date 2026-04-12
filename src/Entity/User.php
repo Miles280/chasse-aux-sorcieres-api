@@ -99,11 +99,18 @@ class User implements UserInterface
     #[ORM\Column(nullable: true)]
     private ?\DateTime $jwtRefreshTokenExpiresAt = null;
 
+    /**
+     * @var Collection<int, UserCooldown>
+     */
+    #[ORM\OneToMany(targetEntity: UserCooldown::class, mappedBy: 'user', orphanRemoval: true)]
+    private Collection $userCooldowns;
+
     public function __construct()
     {
         $this->transactions = new ArrayCollection();
         $this->inventories = new ArrayCollection();
         $this->createdAt = new DateTimeImmutable();
+        $this->userCooldowns = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -383,6 +390,36 @@ class User implements UserInterface
     public function setJwtRefreshTokenExpiresAt(?\DateTime $jwtRefreshTokenExpiresAt): static
     {
         $this->jwtRefreshTokenExpiresAt = $jwtRefreshTokenExpiresAt;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, UserCooldown>
+     */
+    public function getUserCooldowns(): Collection
+    {
+        return $this->userCooldowns;
+    }
+
+    public function addUserCooldown(UserCooldown $userCooldown): static
+    {
+        if (!$this->userCooldowns->contains($userCooldown)) {
+            $this->userCooldowns->add($userCooldown);
+            $userCooldown->setUser($this);
+        }
+
+        return $this;
+    }
+
+    public function removeUserCooldown(UserCooldown $userCooldown): static
+    {
+        if ($this->userCooldowns->removeElement($userCooldown)) {
+            // set the owning side to null (unless already changed)
+            if ($userCooldown->getUser() === $this) {
+                $userCooldown->setUser(null);
+            }
+        }
 
         return $this;
     }

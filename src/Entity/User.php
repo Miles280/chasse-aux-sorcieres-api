@@ -105,12 +105,26 @@ class User implements UserInterface
     #[ORM\OneToMany(targetEntity: UserCooldown::class, mappedBy: 'user', orphanRemoval: true)]
     private Collection $userCooldowns;
 
+    /**
+     * @var Collection<int, Game>
+     */
+    #[ORM\OneToMany(targetEntity: Game::class, mappedBy: 'gameMaster')]
+    private Collection $masteredGames;
+
+    /**
+     * @var Collection<int, GamePlayer>
+     */
+    #[ORM\OneToMany(targetEntity: GamePlayer::class, mappedBy: 'user')]
+    private Collection $gamePlayers;
+
     public function __construct()
     {
         $this->transactions = new ArrayCollection();
         $this->inventories = new ArrayCollection();
         $this->createdAt = new DateTimeImmutable();
         $this->userCooldowns = new ArrayCollection();
+        $this->masteredGames = new ArrayCollection();
+        $this->gamePlayers = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -418,6 +432,66 @@ class User implements UserInterface
             // set the owning side to null (unless already changed)
             if ($userCooldown->getUser() === $this) {
                 $userCooldown->setUser(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Game>
+     */
+    public function getMasteredGames(): Collection
+    {
+        return $this->masteredGames;
+    }
+
+    public function addMasteredGame(Game $masteredGame): static
+    {
+        if (!$this->masteredGames->contains($masteredGame)) {
+            $this->masteredGames->add($masteredGame);
+            $masteredGame->setGameMaster($this);
+        }
+
+        return $this;
+    }
+
+    public function removeMasteredGame(Game $masteredGame): static
+    {
+        if ($this->masteredGames->removeElement($masteredGame)) {
+            // set the owning side to null (unless already changed)
+            if ($masteredGame->getGameMaster() === $this) {
+                $masteredGame->setGameMaster(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, GamePlayer>
+     */
+    public function getGamePlayers(): Collection
+    {
+        return $this->gamePlayers;
+    }
+
+    public function addGamePlayer(GamePlayer $gamePlayer): static
+    {
+        if (!$this->gamePlayers->contains($gamePlayer)) {
+            $this->gamePlayers->add($gamePlayer);
+            $gamePlayer->setUser($this);
+        }
+
+        return $this;
+    }
+
+    public function removeGamePlayer(GamePlayer $gamePlayer): static
+    {
+        if ($this->gamePlayers->removeElement($gamePlayer)) {
+            // set the owning side to null (unless already changed)
+            if ($gamePlayer->getUser() === $this) {
+                $gamePlayer->setUser(null);
             }
         }
 

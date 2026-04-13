@@ -3,6 +3,7 @@
 namespace App\Entity;
 
 use ApiPlatform\Metadata\ApiResource;
+use App\Enum\DeathCause;
 use App\Enum\GameStep;
 use App\Repository\GameLogRepository;
 use Doctrine\ORM\Mapping as ORM;
@@ -30,9 +31,9 @@ class GameLog
     #[Groups(['game:read', 'gamelog:read', 'gamelog:write'])]
     private ?GamePlayer $deadPlayer = null;
 
-    #[ORM\Column(length: 255, nullable: true)]
+    #[ORM\Column(length: 50, nullable: true, enumType: DeathCause::class)]
     #[Groups(['game:read', 'gamelog:read', 'gamelog:write'])]
-    private ?string $deathCause = null;
+    private ?DeathCause $deathCause = null;
 
     #[ORM\Column]
     #[Groups(['game:read', 'gamelog:read', 'gamelog:write'])]
@@ -69,12 +70,12 @@ class GameLog
         return $this;
     }
 
-    public function getDeathCause(): ?string
+    public function getDeathCause(): ?DeathCause
     {
         return $this->deathCause;
     }
 
-    public function setDeathCause(?string $deathCause): static
+    public function setDeathCause(?DeathCause $deathCause): static
     {
         $this->deathCause = $deathCause;
         return $this;

@@ -418,7 +418,7 @@ class EconomyService
         }
 
         $cooldown->setStreak($streak);
-        $cooldown->setLastUsedAt($nowUTC); // 🔥 STOCKAGE UTC
+        $cooldown->setLastUsedAt($nowUTC);
 
         $roleMultiplier = $this->getRoleMultiplier($user);
 

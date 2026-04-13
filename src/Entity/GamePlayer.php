@@ -25,7 +25,7 @@ class GamePlayer
     #[Groups(['gameplayer:read', 'gameplayer:write'])]
     private ?Game $game = null;
 
-    #[ORM\ManyToOne(inversedBy: 'gamePlayers')] // Si tu as rajouté gamePlayers dans User
+    #[ORM\ManyToOne(inversedBy: 'gamePlayers')] 
     #[ORM\JoinColumn(nullable: false)]
     #[Groups(['game:read', 'gameplayer:read', 'gameplayer:write'])]
     private ?User $user = null;

@@ -34,7 +34,7 @@ class Game
     #[Groups(['game:read', 'game:write'])]
     private ?GameStatus $status = null;
 
-    #[ORM\Column(length: 100)]
+    #[ORM\Column(length: 100, nullable: true)]
     #[Groups(['game:read', 'game:write'])]
     private ?string $gameMode = null;
 

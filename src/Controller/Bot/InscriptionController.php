@@ -1,0 +1,142 @@
+<?php
+
+namespace App\Controller\Bot;
+
+use App\Exception\GameException;
+use App\Exception\InvalidPayloadException;
+use App\Service\Auth\DiscordUserManager;
+use App\Service\InscriptionService;
+use App\Service\RequestPayloadService;
+use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Routing\Attribute\Route;
+
+#[Route('/bot/games')]
+final class InscriptionController extends AbstractBotController
+{
+    private InscriptionService $inscriptionService;
+    private DiscordUserManager $discordUserService;
+
+    public function __construct(InscriptionService $inscriptionService, DiscordUserManager $discordUserService)
+    {
+        $this->inscriptionService = $inscriptionService;
+        $this->discordUserService = $discordUserService;
+    }
+
+    #[Route('/create', name: 'app_bot_game_create', methods: ['POST'])]
+    public function create(Request $request, RequestPayloadService $payloadService): JsonResponse
+    {
+        try {
+            $payload = $payloadService->extractValidatedPayload($request, ['gameMasterId']);
+            
+            $gameMaster = $this->discordUserService->findOrCreateUserByDiscordId($payload['gameMasterId']);
+            $game = $this->inscriptionService->createWaitingGame($gameMaster);
+
+            return $this->successResponse([
+                'id' => $game->getId(),
+                'gameMasterId' => $gameMaster->getDiscordId(),
+            ]);
+
+        } catch (InvalidPayloadException $e) {
+            return $this->errorResponse($e->getMessage(), Response::HTTP_BAD_REQUEST);
+        } catch (GameException $e) {
+            return $this->errorResponse($e->getMessage(), $e->getCode() ?: Response::HTTP_BAD_REQUEST);
+        } catch (\Throwable $e) {
+            return $this->errorResponse("Erreur: " . $e->getMessage(), Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    #[Route('/waiting', name: 'app_bot_game_waiting_get', methods: ['GET'])]
+    public function getWaiting(): JsonResponse
+    {
+        try {
+            $game = $this->inscriptionService->getCurrentWaitingGame();
+
+            if (!$game) {
+                return $this->errorResponse("Aucune partie en attente.", Response::HTTP_NOT_FOUND);
+            }
+
+            return $this->successResponse([
+                'id' => $game->getId(),
+                'gameMasterId' => $game->getGameMaster()->getDiscordId(),
+                'inscriptionMessageId' => $game->getInscriptionMessageId(),
+                'compoMessageId' => $game->getCompoMessageId(),
+                'players' => $this->inscriptionService->getDiscordIdsFromParticipants($game)
+            ]);
+        } catch (\Throwable $e) {
+            return $this->errorResponse($e->getMessage(), Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    #[Route('/messages/{id}', name: 'app_bot_game_messages_update', methods: ['PATCH'])]
+    public function updateMessages(int $id, Request $request, RequestPayloadService $payloadService): JsonResponse
+    {
+        try {
+            $payload = $payloadService->extractValidatedPayload($request, ['inscriptionMessageId', 'compoMessageId']);
+            $this->inscriptionService->updateDiscordMessageIds($id, $payload['inscriptionMessageId'], $payload['compoMessageId']);
+
+            return $this->successResponse(['message' => 'Messages mis à jour']);
+        } catch (\Throwable $e) {
+            return $this->errorResponse($e->getMessage(), Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    #[Route('/inscription/{id}', name: 'app_bot_game_player_inscription', methods: ['POST'])]
+    public function togglePlayer(int $id, Request $request, RequestPayloadService $payloadService): JsonResponse
+    {
+        try {
+            $payload = $payloadService->extractValidatedPayload($request, ['discordId', 'action']);
+            $user = $this->discordUserService->findOrCreateUserByDiscordId($payload['discordId']);
+
+            $participants = $this->inscriptionService->inscriptionPlayerInGame($id, $user, $payload['action']);
+
+            return $this->successResponse(['players' => $participants]);
+        } catch (GameException $e) {
+            return $this->errorResponse($e->getMessage(), $e->getCode() ?: Response::HTTP_BAD_REQUEST);
+        } catch (\Throwable $e) {
+            return $this->errorResponse($e->getMessage(), Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    #[Route('/{id}', name: 'app_bot_game_get', methods: ['GET'])]
+    public function getById(int $id): JsonResponse
+    {
+        try {
+            $game = $this->inscriptionService->getGameById($id);
+
+            if (!$game) {
+                return throw new GameException("Partie introuvable.", Response::HTTP_NOT_FOUND);
+            }
+
+            return $this->successResponse([
+                'id' => $game->getId(),
+                'gameMasterId' => $game->getGameMaster()->getDiscordId(),
+                'inscriptionMessageId' => $game->getInscriptionMessageId(),
+                'compoMessageId' => $game->getCompoMessageId(),
+                'players' => $this->inscriptionService->getDiscordIdsFromParticipants($game)
+            ]);
+        } catch (GameException $e) {
+            return $this->errorResponse($e->getMessage(), $e->getCode() ?: Response::HTTP_BAD_REQUEST);
+        } catch (\Throwable $e) {
+            return $this->errorResponse($e->getMessage(), Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * Annule et supprime une partie en attente
+     */
+    #[Route('/{id}', name: 'app_bot_game_cancel', methods: ['DELETE'])]
+    public function cancelGame(int $id): JsonResponse
+    {
+        try {
+            $this->inscriptionService->cancelGame($id);
+
+            return $this->successResponse(['message' => 'Partie annulée et supprimée']);
+        } catch (GameException $e) {
+            return $this->errorResponse($e->getMessage(), $e->getCode() ?: Response::HTTP_BAD_REQUEST);
+        } catch (\Throwable $e) {
+            return $this->errorResponse($e->getMessage(), Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+}

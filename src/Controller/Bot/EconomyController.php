@@ -2,14 +2,12 @@
 
 namespace App\Controller\Bot;
 
-use App\Entity\UserCooldown;
 use App\Enum\TransactionType;
 use App\Exception\EconomyException;
 use App\Exception\InvalidPayloadException;
 use App\Service\Auth\DiscordUserManager;
 use App\Service\EconomyService;
 use App\Service\RequestPayloadService;
-use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;

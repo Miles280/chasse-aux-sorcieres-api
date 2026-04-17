@@ -48,6 +48,18 @@ class ServerConfigService
         if (array_key_exists('deadPlayerRoleId', $configData)) {
             $serverConfig->setDeadPlayerRoleId($configData['deadPlayerRoleId']);
         }
+        if (array_key_exists('spectatorRoleId', $configData)) {
+            $serverConfig->setSpectatorRoleId($configData['spectatorRoleId']);
+        }
+        if (array_key_exists('inscriptionVoiceChannelId', $configData)) {
+            $serverConfig->setInscriptionVoiceChannelId($configData['inscriptionVoiceChannelId']);
+        }
+        if (array_key_exists('gameVoiceChannelId', $configData)) {
+            $serverConfig->setGameVoiceChannelId($configData['gameVoiceChannelId']);
+        }
+        if (array_key_exists('deadVoiceChannelId', $configData)) {
+            $serverConfig->setDeadVoiceChannelId($configData['deadVoiceChannelId']);
+        }
         if (array_key_exists('inscriptionChannelId', $configData)) {
             $serverConfig->setInscriptionChannelId($configData['inscriptionChannelId']);
         }
@@ -59,15 +71,6 @@ class ServerConfigService
         }
         if (array_key_exists('gamePrivateCategoryId', $configData)) {
             $serverConfig->setGamePrivateCategoryId($configData['gamePrivateCategoryId']);
-        }
-        if (array_key_exists('inscriptionVoiceChannelId', $configData)) {
-            $serverConfig->setInscriptionVoiceChannelId($configData['inscriptionVoiceChannelId']);
-        }
-        if (array_key_exists('gameVoiceChannelId', $configData)) {
-            $serverConfig->setGameVoiceChannelId($configData['gameVoiceChannelId']);
-        }
-        if (array_key_exists('deadVoiceChannelId', $configData)) {
-            $serverConfig->setDeadVoiceChannelId($configData['deadVoiceChannelId']);
         }
 
         // Sauvegarde en base de données

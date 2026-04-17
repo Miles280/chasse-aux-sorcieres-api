@@ -20,22 +20,13 @@ class ServerConfig
     private ?string $mjRoleId = null;
 
     #[ORM\Column(length: 50, nullable: true)]
-    private ?string $inscriptionChannelId = null;
-
-    #[ORM\Column(length: 50, nullable: true)]
-    private ?string $gameCategoryId = null;
-
-    #[ORM\Column(length: 50, nullable: true)]
-    private ?string $gameMjChannelId = null;
-
-    #[ORM\Column(length: 50, nullable: true)]
-    private ?string $gamePrivateCategoryId = null;
-
-    #[ORM\Column(length: 50, nullable: true)]
     private ?string $playerRoleId = null;
 
     #[ORM\Column(length: 50, nullable: true)]
     private ?string $deadPlayerRoleId = null;
+
+    #[ORM\Column(length: 50, nullable: true)]
+    private ?string $spectatorRoleId = null;
 
     #[ORM\Column(length: 50, nullable: true)]
     private ?string $inscriptionVoiceChannelId = null;
@@ -45,6 +36,18 @@ class ServerConfig
 
     #[ORM\Column(length: 50, nullable: true)]
     private ?string $deadVoiceChannelId = null;
+
+    #[ORM\Column(length: 50, nullable: true)]
+    private ?string $inscriptionChannelId = null;
+
+    #[ORM\Column(length: 50, nullable: true)]
+    private ?string $gameMjChannelId = null;
+
+    #[ORM\Column(length: 50, nullable: true)]
+    private ?string $gameCategoryId = null;
+
+    #[ORM\Column(length: 50, nullable: true)]
+    private ?string $gamePrivateCategoryId = null;
 
     public function getId(): ?int
     {
@@ -75,54 +78,6 @@ class ServerConfig
         return $this;
     }
 
-    public function getInscriptionChannelId(): ?string
-    {
-        return $this->inscriptionChannelId;
-    }
-
-    public function setInscriptionChannelId(?string $inscriptionChannelId): static
-    {
-        $this->inscriptionChannelId = $inscriptionChannelId;
-
-        return $this;
-    }
-
-    public function getGameCategoryId(): ?string
-    {
-        return $this->gameCategoryId;
-    }
-
-    public function setGameCategoryId(?string $gameCategoryId): static
-    {
-        $this->gameCategoryId = $gameCategoryId;
-
-        return $this;
-    }
-
-    public function getGameMjChannelId(): ?string
-    {
-        return $this->gameMjChannelId;
-    }
-
-    public function setGameMjChannelId(?string $gameMjChannelId): static
-    {
-        $this->gameMjChannelId = $gameMjChannelId;
-
-        return $this;
-    }
-
-    public function getGamePrivateCategoryId(): ?string
-    {
-        return $this->gamePrivateCategoryId;
-    }
-
-    public function setGamePrivateCategoryId(?string $gamePrivateCategoryId): static
-    {
-        $this->gamePrivateCategoryId = $gamePrivateCategoryId;
-
-        return $this;
-    }
-
     public function getPlayerRoleId(): ?string
     {
         return $this->playerRoleId;
@@ -147,6 +102,18 @@ class ServerConfig
         return $this;
     }
 
+    public function getSpectatorRoleId(): ?string
+    {
+        return $this->spectatorRoleId;
+    }
+
+    public function setSpectatorRoleId(?string $spectatorRoleId): static
+    {
+        $this->spectatorRoleId = $spectatorRoleId;
+
+        return $this;
+    }
+
     public function getInscriptionVoiceChannelId(): ?string
     {
         return $this->inscriptionVoiceChannelId;
@@ -159,7 +126,7 @@ class ServerConfig
         return $this;
     }
 
-    public function getGameVoiceChannelId(): ?string
+        public function getGameVoiceChannelId(): ?string
     {
         return $this->gameVoiceChannelId;
     }
@@ -182,4 +149,53 @@ class ServerConfig
 
         return $this;
     }
+
+    public function getInscriptionChannelId(): ?string
+    {
+        return $this->inscriptionChannelId;
+    }
+
+    public function setInscriptionChannelId(?string $inscriptionChannelId): static
+    {
+        $this->inscriptionChannelId = $inscriptionChannelId;
+
+        return $this;
+    }
+
+    public function getGameMjChannelId(): ?string
+    {
+        return $this->gameMjChannelId;
+    }
+
+    public function setGameMjChannelId(?string $gameMjChannelId): static
+    {
+        $this->gameMjChannelId = $gameMjChannelId;
+
+        return $this;
+    }
+
+    public function getGameCategoryId(): ?string
+    {
+        return $this->gameCategoryId;
+    }
+
+    public function setGameCategoryId(?string $gameCategoryId): static
+    {
+        $this->gameCategoryId = $gameCategoryId;
+
+        return $this;
+    }
+
+    public function getGamePrivateCategoryId(): ?string
+    {
+        return $this->gamePrivateCategoryId;
+    }
+
+    public function setGamePrivateCategoryId(?string $gamePrivateCategoryId): static
+    {
+        $this->gamePrivateCategoryId = $gamePrivateCategoryId;
+
+        return $this;
+    }
+
 }

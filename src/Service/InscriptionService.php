@@ -34,7 +34,7 @@ class InscriptionService
     {     
         // 1. Vérifier si une partie est déjà en cours (WAITING ou PLAYING)
         $existingGame = $this->em->getRepository(Game::class)->findOneBy([
-            'status' => [GameStatus::PLAYING]
+            'status' => [GameStatus::WAITING, GameStatus::PLAYING]
         ]);
 
         if ($existingGame) throw new GameException("Une partie est déjà en cours.");
@@ -68,7 +68,7 @@ class InscriptionService
     }
 
     /**
-     * Gère l'inscription via l'entité GamePlayer
+     * Gère l'état d'un utilisateur dans la partie (Joueur, Spectateur ou Départ)
      */
     public function inscriptionPlayerInGame(int $gameId, User $user, string $action): array
     {
@@ -79,32 +79,69 @@ class InscriptionService
             throw new GameException("Les inscriptions sont fermées.", Response::HTTP_FORBIDDEN);
         }
 
-        // On cherche si le joueur est déjà dans la partie
         $gamePlayerRepo = $this->em->getRepository(GamePlayer::class);
-        $existingRegistration = $gamePlayerRepo->findOneBy(['game' => $game, 'user' => $user]);
+        $existing = $gamePlayerRepo->findOneBy(['game' => $game, 'user' => $user]);
 
-        if ($action === 'join') {
-            if ($existingRegistration) {
-                throw new GameException("Tu es déjà inscrit à cette partie.", Response::HTTP_BAD_REQUEST);
-            }
+        switch ($action) {
+            case 'join':
+                if ($existing) {
+                    if (!$existing->isSpectator()) {
+                        throw new GameException("Tu es déjà inscrit comme joueur.", Response::HTTP_BAD_REQUEST);
+                    }
+                    // Il était spectateur, il devient joueur
+                    $existing->setIsSpectator(false);
+                } else {
+                    // Nouvelle inscription en tant que joueur
+                    $this->createNewRegistration($game, $user, false);
+                }
+                break;
 
-            $gamePlayer = new GamePlayer();
-            $gamePlayer->setGame($game);
-            $gamePlayer->setUser($user);
-            $gamePlayer->setIsAlive(true);
+            case 'spectate':
+                if ($existing) {
+                    if ($existing->isSpectator()) {
+                        throw new GameException("Tu es déjà spectateur.", Response::HTTP_BAD_REQUEST);
+                    }
+                    // Il est joueur, il ne peut pas devenir spectateur
+                    throw new GameException("Tu es actuellement inscrit en tant que joueur.", Response::HTTP_BAD_REQUEST);
+                } else {
+                    // Nouvelle inscription en tant que spectateur
+                    $this->createNewRegistration($game, $user, true);
+                }
+                break;
 
-            $this->em->persist($gamePlayer);
-            $game->addGamePlayer($gamePlayer);
-        } else {
-            if (!$existingRegistration) {
-                throw new GameException("Tu n'es pas inscrit à cette partie.", Response::HTTP_BAD_REQUEST);
-            }
-            $this->em->remove($existingRegistration);
+            case 'leave':
+                if (!$existing) {
+                    throw new GameException("Tu n'es pas dans cette partie.", Response::HTTP_BAD_REQUEST);
+                }
+                $this->em->remove($existing);
+                break;
+
+            default:
+                throw new GameException("Action non reconnue.", Response::HTTP_BAD_REQUEST);
         }
 
         $this->em->flush();
 
-        return $this->getDiscordIdsFromParticipants($game);
+        // On retourne les deux listes pour que le bot puisse mettre à jour l'embed complet
+        return [
+            'players' => $this->getDiscordIdsFromPlayers($game),
+            'spectators' => $this->getDiscordIdsFromSpectators($game)
+        ];
+    }
+
+    /**
+     * Petite fonction helper pour éviter la répétition de code
+     */
+    private function createNewRegistration(Game $game, User $user, bool $asSpectator): void
+    {
+        $gamePlayer = new GamePlayer();
+        $gamePlayer->setGame($game);
+        $gamePlayer->setUser($user);
+        $gamePlayer->setIsAlive(true);
+        $gamePlayer->setIsSpectator($asSpectator);
+
+        $this->em->persist($gamePlayer);
+        $game->addGamePlayer($gamePlayer);
     }
 
     /**
@@ -129,8 +166,25 @@ class InscriptionService
         $this->em->flush();
     }
 
-    public function getDiscordIdsFromParticipants(Game $game): array
+    /**
+     * Récupère les IDs Discord des joueurs (isSpectator = false)
+     */
+    public function getDiscordIdsFromPlayers(Game $game): array
     {
-        return $game->getGamePlayers()->map(fn(GamePlayer $gp) => $gp->getUser()->getDiscordId())->toArray();
+        return $game->getGamePlayers()
+            ->filter(fn(GamePlayer $gp) => !$gp->isSpectator())
+            ->map(fn(GamePlayer $gp) => $gp->getUser()->getDiscordId())
+            ->toArray();
+    }
+
+    /**
+     * Récupère les IDs Discord des spectateurs (isSpectator = true)
+     */
+    public function getDiscordIdsFromSpectators(Game $game): array
+    {
+        return $game->getGamePlayers()
+            ->filter(fn(GamePlayer $gp) => $gp->isSpectator())
+            ->map(fn(GamePlayer $gp) => $gp->getUser()->getDiscordId())
+            ->toArray();
     }
 }

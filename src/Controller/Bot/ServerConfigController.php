@@ -32,16 +32,17 @@ final class ServerConfigController extends AbstractBotController
             if (!$serverConfig) {
                 return $this->successResponse([
                     'discordServerId' => $discordServerId,
-                    'mjRoleId' => null,
-                    'inscriptionChannelId' => null,
-                    'gameCategoryId' => null,
-                    'gameMjChannelId' => null,
-                    'gamePrivateCategoryId' => null,
+                    'mjRoleId' =>null,
                     'playerRoleId' => null,
                     'deadPlayerRoleId' => null,
-                    'inscriptionVoiceChannelId' => null,
-                    'gameVoiceChannelId' => null,
-                    'deadVoiceChannelId' => null
+                    'spectatorRoleId' => null,
+                    'inscriptionVoiceChannelId'=> null, 
+                    'gameVoiceChannelId'=> null,        
+                    'deadVoiceChannelId'=> null,
+                    'inscriptionChannelId' => null,
+                    'gameMjChannelId' => null,
+                    'gameCategoryId' => null,
+                    'gamePrivateCategoryId' => null
                 ]);
             }
 
@@ -49,15 +50,16 @@ final class ServerConfigController extends AbstractBotController
             return $this->successResponse([
                 'discordServerId' => $serverConfig->getDiscordServerId(),
                 'mjRoleId' => $serverConfig->getMjRoleId(),
-                'inscriptionChannelId' => $serverConfig->getInscriptionChannelId(),
-                'gameCategoryId' => $serverConfig->getGameCategoryId(),
-                'gameMjChannelId' => $serverConfig->getGameMjChannelId(),
-                'gamePrivateCategoryId' => $serverConfig->getGamePrivateCategoryId(),
                 'playerRoleId' => $serverConfig->getPlayerRoleId(),
                 'deadPlayerRoleId' => $serverConfig->getDeadPlayerRoleId(),
+                'spectatorRoleId' => $serverConfig->getSpectatorRoleId(),
                 'inscriptionVoiceChannelId'=> $serverConfig->getInscriptionVoiceChannelId(), 
                 'gameVoiceChannelId'=> $serverConfig->getGameVoiceChannelId(),        
                 'deadVoiceChannelId'=> $serverConfig->getDeadVoiceChannelId(),
+                'inscriptionChannelId' => $serverConfig->getInscriptionChannelId(),
+                'gameMjChannelId' => $serverConfig->getGameMjChannelId(),
+                'gameCategoryId' => $serverConfig->getGameCategoryId(),
+                'gamePrivateCategoryId' => $serverConfig->getGamePrivateCategoryId(),
             ]);
 
         } catch (\Throwable $e) {
@@ -78,16 +80,17 @@ final class ServerConfigController extends AbstractBotController
 
             // Liste des champs modifiables selon ton Entité
             $allowedFields = [
-                'mjRoleId',
-                'inscriptionChannelId',
-                'gameCategoryId',
-                'gameMjChannelId',
-                'gamePrivateCategoryId',
-                'playerRoleId',
+                'mjRoleId' ,
+                'playerRoleId' ,
                 'deadPlayerRoleId',
+                'spectatorRoleId',
                 'inscriptionVoiceChannelId', 
                 'gameVoiceChannelId',        
-                'deadVoiceChannelId'
+                'deadVoiceChannelId',
+                'inscriptionChannelId',
+                'gameMjChannelId',
+                'gameCategoryId',
+                'gamePrivateCategoryId'
             ];
 
             $configData = [];

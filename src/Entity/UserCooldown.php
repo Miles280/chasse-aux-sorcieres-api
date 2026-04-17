@@ -6,12 +6,7 @@ use App\Repository\UserCooldownRepository;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: UserCooldownRepository::class)]
-#[ORM\Table(
-    name: 'user_cooldown',
-    uniqueConstraints: [
-        new ORM\UniqueConstraint(name: 'user_activity_unique', columns: ['user_id', 'activity'])
-    ]
-)]
+#[ORM\UniqueConstraint(name: 'user_activity_unique', columns: ['user_id', 'activity'])]
 class UserCooldown
 {
     #[ORM\Id]

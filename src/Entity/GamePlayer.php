@@ -32,6 +32,10 @@ class GamePlayer
 
     #[ORM\Column]
     #[Groups(['game:read', 'gameplayer:read', 'gameplayer:write'])]
+    private ?bool $isSpectator = false;
+
+    #[ORM\Column]
+    #[Groups(['game:read', 'gameplayer:read', 'gameplayer:write'])]
     private ?bool $isAlive = null;
 
     #[ORM\ManyToOne]
@@ -75,6 +79,17 @@ class GamePlayer
     public function setUser(?User $user): static
     {
         $this->user = $user;
+        return $this;
+    }
+
+    public function isSpectator(): ?bool
+    {
+        return $this->isSpectator;
+    }
+
+    public function setIsSpectator(bool $isSpectator): static
+    {
+        $this->isSpectator = $isSpectator;
         return $this;
     }
 

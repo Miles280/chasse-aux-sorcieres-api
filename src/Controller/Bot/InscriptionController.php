@@ -62,7 +62,8 @@ final class InscriptionController extends AbstractBotController
                 'gameMasterId' => $game->getGameMaster()->getDiscordId(),
                 'inscriptionMessageId' => $game->getInscriptionMessageId(),
                 'compoMessageId' => $game->getCompoMessageId(),
-                'players' => $this->inscriptionService->getDiscordIdsFromParticipants($game)
+                'players' => $this->inscriptionService->getDiscordIdsFromPlayers($game),
+                'spectators' => $this->inscriptionService->getDiscordIdsFromSpectators($game) 
             ]);
         } catch (\Throwable $e) {
             return $this->errorResponse($e->getMessage(), Response::HTTP_INTERNAL_SERVER_ERROR);
@@ -83,19 +84,26 @@ final class InscriptionController extends AbstractBotController
     }
 
     #[Route('/inscription/{id}', name: 'app_bot_game_player_inscription', methods: ['POST'])]
-    public function togglePlayer(int $id, Request $request, RequestPayloadService $payloadService): JsonResponse
+    public function inscriptionPlayer(int $id, Request $request, RequestPayloadService $payloadService): JsonResponse
     {
         try {
             $payload = $payloadService->extractValidatedPayload($request, ['discordId', 'action']);
             $user = $this->discordUserService->findOrCreateUserByDiscordId($payload['discordId']);
 
-            $participants = $this->inscriptionService->inscriptionPlayerInGame($id, $user, $payload['action']);
+            $this->inscriptionService->inscriptionPlayerInGame($id, $user, $payload['action']);
+            
+            $game = $this->inscriptionService->getGameById($id);
 
-            return $this->successResponse(['players' => $participants]);
-        } catch (GameException $e) {
-            return $this->errorResponse($e->getMessage(), $e->getCode() ?: Response::HTTP_BAD_REQUEST);
+            return $this->successResponse([
+                'id' => $game->getId(),
+                'gameMasterId' => $game->getGameMaster()->getDiscordId(),
+                'inscriptionMessageId' => $game->getInscriptionMessageId(),
+                'compoMessageId' => $game->getCompoMessageId(),
+                'players' => $this->inscriptionService->getDiscordIdsFromPlayers($game),
+                'spectators' => $this->inscriptionService->getDiscordIdsFromSpectators($game)
+            ]);
         } catch (\Throwable $e) {
-            return $this->errorResponse($e->getMessage(), Response::HTTP_INTERNAL_SERVER_ERROR);
+            return $this->errorResponse($e->getMessage(), 500);
         }
     }
 
@@ -114,7 +122,8 @@ final class InscriptionController extends AbstractBotController
                 'gameMasterId' => $game->getGameMaster()->getDiscordId(),
                 'inscriptionMessageId' => $game->getInscriptionMessageId(),
                 'compoMessageId' => $game->getCompoMessageId(),
-                'players' => $this->inscriptionService->getDiscordIdsFromParticipants($game)
+                'players' => $this->inscriptionService->getDiscordIdsFromPlayers($game),
+                'spectators' => $this->inscriptionService->getDiscordIdsFromSpectators($game) 
             ]);
         } catch (GameException $e) {
             return $this->errorResponse($e->getMessage(), $e->getCode() ?: Response::HTTP_BAD_REQUEST);

@@ -68,7 +68,7 @@ class InscriptionService
     }
 
     /**
-     * Gère l'état d'un utilisateur dans la partie (Joueur, Spectateur ou Départ)
+     * Gère l'état d'un utilisateur dans la partie (join, spectate ou leaveàju )
      */
     public function inscriptionPlayerInGame(int $gameId, User $user, string $action): array
     {
@@ -112,6 +112,8 @@ class InscriptionService
             case 'leave':
                 if (!$existing) {
                     throw new GameException("Tu n'es pas dans cette partie.", Response::HTTP_BAD_REQUEST);
+                } else if ($existing->isSpectator()) {
+                    throw new GameException("Tu n'es pas inscrit à cette partie.", Response::HTTP_BAD_REQUEST);
                 }
                 $this->em->remove($existing);
                 break;

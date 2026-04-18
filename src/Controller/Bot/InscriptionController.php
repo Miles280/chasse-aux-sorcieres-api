@@ -107,6 +107,26 @@ final class InscriptionController extends AbstractBotController
         }
     }
 
+    /**
+     * Annule et supprime une partie en attente
+     */
+    #[Route('/cancel/{id}', name: 'app_bot_game_cancel', methods: ['DELETE'])]
+    public function cancelGame(int $id): JsonResponse
+    {
+        try {
+            $this->inscriptionService->cancelGame($id);
+
+            return $this->successResponse(['message' => 'Partie annulée et supprimée']);
+        } catch (GameException $e) {
+            return $this->errorResponse($e->getMessage(), $e->getCode() ?: Response::HTTP_BAD_REQUEST);
+        } catch (\Throwable $e) {
+            return $this->errorResponse($e->getMessage(), Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * Envoie une partie via son ID
+     */
     #[Route('/{id}', name: 'app_bot_game_get', methods: ['GET'])]
     public function getById(int $id): JsonResponse
     {
@@ -125,23 +145,6 @@ final class InscriptionController extends AbstractBotController
                 'players' => $this->inscriptionService->getDiscordIdsFromPlayers($game),
                 'spectators' => $this->inscriptionService->getDiscordIdsFromSpectators($game) 
             ]);
-        } catch (GameException $e) {
-            return $this->errorResponse($e->getMessage(), $e->getCode() ?: Response::HTTP_BAD_REQUEST);
-        } catch (\Throwable $e) {
-            return $this->errorResponse($e->getMessage(), Response::HTTP_INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    /**
-     * Annule et supprime une partie en attente
-     */
-    #[Route('/{id}', name: 'app_bot_game_cancel', methods: ['DELETE'])]
-    public function cancelGame(int $id): JsonResponse
-    {
-        try {
-            $this->inscriptionService->cancelGame($id);
-
-            return $this->successResponse(['message' => 'Partie annulée et supprimée']);
         } catch (GameException $e) {
             return $this->errorResponse($e->getMessage(), $e->getCode() ?: Response::HTTP_BAD_REQUEST);
         } catch (\Throwable $e) {

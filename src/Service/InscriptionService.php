@@ -173,10 +173,10 @@ class InscriptionService
      */
     public function getDiscordIdsFromPlayers(Game $game): array
     {
-        return $game->getGamePlayers()
+        return array_values($game->getGamePlayers()
             ->filter(fn(GamePlayer $gp) => !$gp->isSpectator())
             ->map(fn(GamePlayer $gp) => $gp->getUser()->getDiscordId())
-            ->toArray();
+            ->toArray());
     }
 
     /**
@@ -184,9 +184,9 @@ class InscriptionService
      */
     public function getDiscordIdsFromSpectators(Game $game): array
     {
-        return $game->getGamePlayers()
+        return array_values($game->getGamePlayers()
             ->filter(fn(GamePlayer $gp) => $gp->isSpectator())
             ->map(fn(GamePlayer $gp) => $gp->getUser()->getDiscordId())
-            ->toArray();
+            ->toArray());
     }
 }

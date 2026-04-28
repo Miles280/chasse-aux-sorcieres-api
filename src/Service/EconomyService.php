@@ -354,16 +354,22 @@ class EconomyService
         $rank = $data['rank'];
 
         if ($rank === null) {
-            return 1;
+            return 1.0; 
         }
 
-        // 🔥 Scaling simple basé sur le rang
-        return match (true) {
-            $rank >= 10 => 2.5,
-            $rank >= 7  => 2.0,
-            $rank >= 5  => 1.6,
-            $rank >= 3  => 1.3,
-            default     => 1.1,
+        // Correspondance précise selon tes niveaux
+        return match ($rank) {
+            10 => 2.60, // Seigneur
+            9  => 2.35, // Duc
+            8  => 2.15, // Comte
+            7  => 1.95, // Baron
+            6  => 1.75, // Chevalier royal
+            5  => 1.60, // Détective
+            4  => 1.45, // Défenseur
+            3  => 1.30, // Chasseur
+            2  => 1.15, // Fermier
+            1  => 1.00, // Paillasson
+            default => 1.00,
         };
     }
 
@@ -380,13 +386,12 @@ class EconomyService
         $tzUTC = new \DateTimeZone('UTC');
 
         $nowUTC = new \DateTimeImmutable('now', $tzUTC);
-
         $nowParis = $nowUTC->setTimezone($tzParis);
         $todayParis = $nowParis->setTime(0, 0);
 
         if ($cooldown) {
             $lastParis = $cooldown->getLastUsedAt()->setTimezone($tzParis);
-            $lastDay = $lastParis->setTime(0, 0);
+            $lastDay = clone $lastParis->setTime(0, 0);
 
             if ($lastDay == $todayParis) {
                 $nextReset = (clone $todayParis)->modify('+1 day');
@@ -404,15 +409,16 @@ class EconomyService
             $cooldown->setStreak(0);
         }
 
-        $streak = 1;
+        // Gestion du Streak
+        $streak = 1; // Jour 1 par défaut
 
         if ($cooldown->getLastUsedAt()) {
             $lastParis = $cooldown->getLastUsedAt()->setTimezone($tzParis);
-            $lastDay = $lastParis->setTime(0, 0);
-
-            $yesterday = $todayParis->modify('-1 day');
+            $lastDay = clone $lastParis->setTime(0, 0);
+            $yesterday = (clone $todayParis)->modify('-1 day');
 
             if ($lastDay == $yesterday) {
+                // Le joueur a claim hier, on augmente le streak
                 $streak = $cooldown->getStreak() + 1;
             }
         }
@@ -420,13 +426,43 @@ class EconomyService
         $cooldown->setStreak($streak);
         $cooldown->setLastUsedAt($nowUTC);
 
+        // ==========================================
+        // SYSTÈME DE TIRAGE (ROLL)
+        // ==========================================
+        $roll = mt_rand(1, 100);
+        $drawType = '';
+        $drawMessage = '';
+        $baseAmount = 0;
+
+        if ($roll <= 5) { // 5% de chance (1 à 5)
+            $drawType = 'critical_failure';
+            $drawMessage = 'Le coffre était piégé';
+            $baseAmount = mt_rand(0, 5);
+        } elseif ($roll <= 95) { // 90% de chance (6 à 95)
+            $drawType = 'common';
+            $drawMessage = 'La norme';
+            $baseAmount = mt_rand(15, 30);
+        } else { // 5% de chance (96 à 100)
+            $drawType = 'jackpot';
+            $drawMessage = 'Le trésor royal';
+            $baseAmount = mt_rand(50, 70);
+        }
+
+        // ==========================================
+        // CALCUL DES MULTIPLICATEURS
+        // ==========================================
         $roleMultiplier = $this->getRoleMultiplier($user);
+        
+        // Streak : +5% par jour à partir du jour 2. Plafonné à x2.0 (soit 21 jours de streak)
+        // Si tu veux que le jour 1 donne déjà un bonus, retire le "- 1"
+        $streakBonus = min(2.0, 1.0 + (($streak - 1) * 0.05)); 
 
-        $base = 10;
-        $streakBonus = min(2, 1 + ($streak * 0.05));
+        // Arrondi du total
+        $reward = (int) round($baseAmount * $roleMultiplier * $streakBonus);
 
-        $reward = (int) round($base * $roleMultiplier * $streakBonus);
-
+        // ==========================================
+        // SAUVEGARDE
+        // ==========================================
         $oldRubies = $user->getRubies();
         $user->setRubies($oldRubies + $reward);
 
@@ -442,11 +478,33 @@ class EconomyService
         $this->em->persist($cooldown);
         $this->em->flush();
 
+        // ==========================================
+        // RETOUR DÉTAILLÉ
+        // ==========================================
         return [
             'reward' => $reward,
-            'streak' => $streak,
-            'previous' => $oldRubies,
-            'current' => $user->getRubies()
+            'previous_balance' => $oldRubies,
+            'current_balance' => $user->getRubies(),
+            'details' => [
+                'roll_result' => [
+                    'value' => $roll,
+                    'type' => $drawType,
+                    'message' => $drawMessage,
+                    'base_amount' => $baseAmount,
+                ],
+                'multipliers' => [
+                    'role_rate' => $roleMultiplier,
+                    'streak_days' => $streak,
+                    'streak_rate' => $streakBonus,
+                ],
+                // On peut même filer le calcul exact pour le front
+                'formula' => sprintf(
+                    "%d (Base) x %.2f (Rang) x %.2f (Streak)", 
+                    $baseAmount, 
+                    $roleMultiplier, 
+                    $streakBonus
+                )
+            ]
         ];
     }
 }

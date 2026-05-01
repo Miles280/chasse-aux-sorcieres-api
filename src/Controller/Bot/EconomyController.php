@@ -401,4 +401,26 @@ final class EconomyController extends AbstractBotController
             return $this->errorResponse("Erreur interne du serveur.", Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
+
+    #[Route('/daily', name: 'app_bot_economy_daily', methods: ['POST'])]
+    public function daily(Request $request, RequestPayloadService $payloadService): JsonResponse
+    {
+        try {
+            $payload = $payloadService->extractValidatedPayload($request, ['discordId']);
+            $discordId = $payload['discordId'];
+
+            $user = $this->discordUserService->findOrCreateUserByDiscordId($discordId);
+
+            $result = $this->economyService->claimDaily($user);
+
+            return $this->successResponse($result);
+
+        } catch (InvalidPayloadException $e) {
+            return $this->errorResponse($e->getMessage(), Response::HTTP_BAD_REQUEST);
+        } catch (EconomyException $e) {
+            return $this->errorResponse($e->getMessage(), $e->getCode());
+        } catch (\Throwable $e) {
+            return $this->errorResponse("Erreur interne du serveur.", Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
 }

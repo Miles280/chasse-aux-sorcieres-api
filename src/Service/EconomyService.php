@@ -347,4 +347,164 @@ class EconomyService
             ]
         ];
     }
+
+    public function getRoleMultiplier(User $user): float
+    {
+        $data = $this->getUserHighestSocialRankData($user);
+        $rank = $data['rank'];
+
+        if ($rank === null) {
+            return 1.0; 
+        }
+
+        // Correspondance précise selon tes niveaux
+        return match ($rank) {
+            10 => 2.60, // Seigneur
+            9  => 2.35, // Duc
+            8  => 2.15, // Comte
+            7  => 1.95, // Baron
+            6  => 1.75, // Chevalier royal
+            5  => 1.60, // Détective
+            4  => 1.45, // Défenseur
+            3  => 1.30, // Chasseur
+            2  => 1.15, // Fermier
+            1  => 1.00, // Paillasson
+            default => 1.00,
+        };
+    }
+
+    public function claimDaily(User $user): array
+    {
+        $cooldownRepo = $this->em->getRepository(\App\Entity\UserCooldown::class);
+
+        $cooldown = $cooldownRepo->findOneBy([
+            'user' => $user,
+            'activity' => 'daily'
+        ]);
+
+        $tzParis = new \DateTimeZone('Europe/Paris');
+        $tzUTC = new \DateTimeZone('UTC');
+
+        $nowUTC = new \DateTimeImmutable('now', $tzUTC);
+        $nowParis = $nowUTC->setTimezone($tzParis);
+        $todayParis = $nowParis->setTime(0, 0);
+
+        if ($cooldown) {
+            $lastParis = $cooldown->getLastUsedAt()->setTimezone($tzParis);
+            $lastDay = clone $lastParis->setTime(0, 0);
+
+            if ($lastDay == $todayParis) {
+                $nextReset = (clone $todayParis)->modify('+1 day');
+                $timestamp = $nextReset->getTimestamp();
+
+                throw new EconomyException(
+                    "Vous avez déjà récupéré votre récompense aujourd'hui.\nProchain daily <t:$timestamp:R>",
+                    Response::HTTP_BAD_REQUEST
+                );
+            }
+        } else {
+            $cooldown = new \App\Entity\UserCooldown();
+            $cooldown->setUser($user);
+            $cooldown->setActivity('daily');
+            $cooldown->setStreak(0);
+        }
+
+        // Gestion du Streak
+        $streak = 1; // Jour 1 par défaut
+
+        if ($cooldown->getLastUsedAt()) {
+            $lastParis = $cooldown->getLastUsedAt()->setTimezone($tzParis);
+            $lastDay = clone $lastParis->setTime(0, 0);
+            $yesterday = (clone $todayParis)->modify('-1 day');
+
+            if ($lastDay == $yesterday) {
+                // Le joueur a claim hier, on augmente le streak
+                $streak = $cooldown->getStreak() + 1;
+            }
+        }
+
+        $cooldown->setStreak($streak);
+        $cooldown->setLastUsedAt($nowUTC);
+
+        // ==========================================
+        // SYSTÈME DE TIRAGE (ROLL)
+        // ==========================================
+        $roll = mt_rand(1, 100);
+        $drawType = '';
+        $drawMessage = '';
+        $baseAmount = 0;
+
+        if ($roll <= 5) { // 5% de chance (1 à 5)
+            $drawType = 'critical_failure';
+            $drawMessage = 'Le coffre était piégé';
+            $baseAmount = mt_rand(0, 5);
+        } elseif ($roll <= 95) { // 90% de chance (6 à 95)
+            $drawType = 'common';
+            $drawMessage = 'La norme';
+            $baseAmount = mt_rand(15, 30);
+        } else { // 5% de chance (96 à 100)
+            $drawType = 'jackpot';
+            $drawMessage = 'Le trésor royal';
+            $baseAmount = mt_rand(50, 70);
+        }
+
+        // ==========================================
+        // CALCUL DES MULTIPLICATEURS
+        // ==========================================
+        $roleMultiplier = $this->getRoleMultiplier($user);
+        
+        // Streak : +5% par jour à partir du jour 2. Plafonné à x2.0 (soit 21 jours de streak)
+        // Si tu veux que le jour 1 donne déjà un bonus, retire le "- 1"
+        $streakBonus = min(2.0, 1.0 + (($streak - 1) * 0.05)); 
+
+        // Arrondi du total
+        $reward = (int) round($baseAmount * $roleMultiplier * $streakBonus);
+
+        // ==========================================
+        // SAUVEGARDE
+        // ==========================================
+        $oldRubies = $user->getRubies();
+        $user->setRubies($oldRubies + $reward);
+
+        $this->createTransaction(
+            TransactionType::GAIN,
+            'rubies',
+            $reward,
+            $user,
+            null,
+            "Récompense journalière"
+        );
+
+        $this->em->persist($cooldown);
+        $this->em->flush();
+
+        // ==========================================
+        // RETOUR DÉTAILLÉ
+        // ==========================================
+        return [
+            'reward' => $reward,
+            'previous_balance' => $oldRubies,
+            'current_balance' => $user->getRubies(),
+            'details' => [
+                'roll_result' => [
+                    'value' => $roll,
+                    'type' => $drawType,
+                    'message' => $drawMessage,
+                    'base_amount' => $baseAmount,
+                ],
+                'multipliers' => [
+                    'role_rate' => $roleMultiplier,
+                    'streak_days' => $streak,
+                    'streak_rate' => $streakBonus,
+                ],
+                // On peut même filer le calcul exact pour le front
+                'formula' => sprintf(
+                    "%d (Base) x %.2f (Rang) x %.2f (Streak)", 
+                    $baseAmount, 
+                    $roleMultiplier, 
+                    $streakBonus
+                )
+            ]
+        ];
+    }
 }

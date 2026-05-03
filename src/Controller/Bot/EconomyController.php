@@ -61,6 +61,10 @@ final class EconomyController extends AbstractBotController
                 throw new InvalidPayloadException('Un utilisateur ne peut pas se donner de monnaie à lui-même.', Response::HTTP_BAD_REQUEST);
             }
 
+            if ($amount > 500) {
+                throw new EconomyException('Vous ne pouvez pas donner plus de 500 Rubis en une seule fois.', Response::HTTP_BAD_REQUEST);
+            }
+
             // Récupération des utilisateurs expéditeur et destinataire
             $sender = $this->discordUserService->findOrCreateUserByDiscordId($senderId);
             $receiver = $this->discordUserService->findOrCreateUserByDiscordId($receiverId);

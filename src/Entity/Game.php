@@ -92,10 +92,18 @@ class Game
     #[Groups(['game:read'])]
     private Collection $gameLogs;
 
+    /**
+     * @var Collection<int, GameComposition>
+     */
+    #[ORM\OneToMany(targetEntity: GameComposition::class, mappedBy: 'game', orphanRemoval: true)]
+    #[Groups(['game:read'])]
+    private Collection $compositions;
+
     public function __construct()
     {
         $this->gamePlayers = new ArrayCollection();
         $this->gameLogs = new ArrayCollection();
+        $this->compositions = new ArrayCollection();
 
         $this->createdAt = new \DateTimeImmutable();
         $this->status = GameStatus::WAITING;
@@ -293,6 +301,33 @@ class Game
         if ($this->gameLogs->removeElement($gameLog)) {
             if ($gameLog->getGame() === $this) {
                 $gameLog->setGame(null);
+            }
+        }
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, GameComposition>
+     */
+    public function getCompositions(): Collection
+    {
+        return $this->compositions;
+    }
+
+    public function addComposition(GameComposition $composition): static
+    {
+        if (!$this->compositions->contains($composition)) {
+            $this->compositions->add($composition);
+            $composition->setGame($this);
+        }
+        return $this;
+    }
+
+    public function removeComposition(GameComposition $composition): static
+    {
+        if ($this->compositions->removeElement($composition)) {
+            if ($composition->getGame() === $this) {
+                $composition->setGame(null);
             }
         }
         return $this;

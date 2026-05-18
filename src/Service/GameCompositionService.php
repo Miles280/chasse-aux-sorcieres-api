@@ -8,6 +8,7 @@ use App\Repository\GameCompositionRepository;
 use App\Repository\GameRepository;
 use App\Repository\RoleRepository;
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
 
 final class GameCompositionService
 {
@@ -15,7 +16,8 @@ final class GameCompositionService
         private EntityManagerInterface $em,
         private GameRepository $gameRepo,
         private RoleRepository $roleRepo,
-        private GameCompositionRepository $compoRepo
+        private GameCompositionRepository $compoRepo,
+        private NormalizerInterface $normalizer,
     ) {}
 
     public function addRoles(int $gameId, array $roleIds): Game
@@ -40,7 +42,7 @@ final class GameCompositionService
                 ]);
 
                 if ($exists) {
-                    throw new \Exception(sprintf("Le rôle %s est déjà présent dans la composition de cette partie.", $role->getName()));
+                    throw new \Exception(sprintf("Le rôle « __%s__ » est déjà présent dans la composition de cette partie.", $role->getName()));
                 }
             }
 
@@ -81,7 +83,7 @@ final class GameCompositionService
             if ($composition) {
                 $this->em->remove($composition);
             } else {
-                throw new \Exception(sprintf("Le rôle %s n'est pas présent dans la composition de cette partie.", $role->getName()));
+                throw new \Exception(sprintf("Le rôle « __%s__ » n'est pas présent dans la composition de cette partie.", $role->getName()));
             }
         }
 
@@ -90,5 +92,34 @@ final class GameCompositionService
         $this->em->refresh($game);
 
         return $game;
+    }
+
+    public function resetRoles(int $gameId): Game
+    {
+        $game = $this->gameRepo->find($gameId);
+        if (!$game) {
+            throw new \Exception("Partie introuvable.");
+        }
+
+        $compositions = $this->compoRepo->findBy(['game' => $game]);
+
+        foreach ($compositions as $composition) {
+            $this->em->remove($composition);
+        }
+
+        $this->em->flush();
+        $this->em->refresh($game);
+
+        return $game;
+    }
+
+    public function formatComposition(Game $game): array
+    {
+        $roles = array_map(
+            fn($composition) => $composition->getRole(), 
+            $game->getCompositions()->toArray()
+        );
+
+        return $this->normalizer->normalize($roles, null, ['groups' => ['role:read']]);
     }
 }

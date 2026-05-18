@@ -12,7 +12,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 
-#[Route('/bot/games')]
+#[Route('/bot/inscription')]
 final class InscriptionController extends AbstractBotController
 {
     private InscriptionService $inscriptionService;
@@ -70,6 +70,36 @@ final class InscriptionController extends AbstractBotController
         }
     }
 
+    #[Route('/give', name: 'app_bot_game_give', methods: ['POST'])]
+    public function give(Request $request, RequestPayloadService $payloadService): JsonResponse
+    {
+        try {
+            $payload = $payloadService->extractValidatedPayload($request, ['discordId']);
+
+            $gameId = $this->inscriptionService->getCurrentWaitingGame()->getId();
+
+            $game = $this->inscriptionService->giveGameMaster(
+                $gameId,
+                $payload['discordId']
+            );
+
+            return $this->successResponse([
+                    'id' => $game->getId(),
+                    'gameMasterId' => $game->getGameMaster()->getDiscordId(),
+                    'inscriptionMessageId' => $game->getInscriptionMessageId(),
+                    'compoMessageId' => $game->getCompoMessageId(),
+                    'players' => $this->inscriptionService->getDiscordIdsFromPlayers($game),
+                    'spectators' => $this->inscriptionService->getDiscordIdsFromSpectators($game) 
+                ]);
+
+        } catch (\Throwable $e) {
+            return $this->errorResponse(
+                $e->getMessage(),
+                Response::HTTP_BAD_REQUEST
+            );
+        }
+    }
+
     #[Route('/messages/{id}', name: 'app_bot_game_messages_update', methods: ['PATCH'])]
     public function updateMessages(int $id, Request $request, RequestPayloadService $payloadService): JsonResponse
     {
@@ -107,9 +137,6 @@ final class InscriptionController extends AbstractBotController
         }
     }
 
-    /**
-     * Annule et supprime une partie en attente
-     */
     #[Route('/cancel/{id}', name: 'app_bot_game_cancel', methods: ['DELETE'])]
     public function cancelGame(int $id): JsonResponse
     {
@@ -124,9 +151,6 @@ final class InscriptionController extends AbstractBotController
         }
     }
 
-    /**
-     * Envoie une partie via son ID
-     */
     #[Route('/{id}', name: 'app_bot_game_get', methods: ['GET'])]
     public function getById(int $id): JsonResponse
     {

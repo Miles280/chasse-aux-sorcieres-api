@@ -65,6 +65,10 @@ class Role
     #[Groups(['role:read', 'role:write'])]
     private ?string $imageUrl = null;
 
+    #[ORM\Column]
+    #[Groups(['role:read'])]
+    private ?bool $isUnique = true;
+
     /**
      * @var Collection<int, Power>
      */
@@ -191,6 +195,17 @@ class Role
                 $power->setRole(null);
             }
         }
+        return $this;
+    }
+
+    public function isUnique(): ?bool
+    {
+        return $this->isUnique;
+    }
+
+    public function setIsUnique(bool $isUnique): static
+    {
+        $this->isUnique = $isUnique;
         return $this;
     }
 

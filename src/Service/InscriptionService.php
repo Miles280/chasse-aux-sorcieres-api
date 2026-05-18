@@ -189,4 +189,27 @@ class InscriptionService
             ->map(fn(GamePlayer $gp) => $gp->getUser()->getDiscordId())
             ->toArray());
     }
+
+    public function giveGameMaster(int $gameId, string $discordId): Game
+    {
+        $game = $this->em->getRepository(Game::class)->find($gameId);
+
+        if (!$game) {
+            throw new GameException("Partie introuvable.", Response::HTTP_NOT_FOUND);
+        }
+
+        $user = $this->em->getRepository(User::class)->findOneBy([
+            'discordId' => $discordId
+        ]);
+
+        if (!$user) {
+            throw new GameException("Utilisateur introuvable.", Response::HTTP_NOT_FOUND);
+        }
+
+        $game->setGameMaster($user);
+
+        $this->em->flush();
+
+        return $game;
+    }
 }

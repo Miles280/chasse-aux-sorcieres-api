@@ -11,7 +11,7 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 
 #[Route('/bot/composition')]
-final class GameBotController extends AbstractBotController
+final class GameCompositionBotController extends AbstractBotController
 {
     public function __construct(
         private GameCompositionService $gameCompositionService

@@ -12,15 +12,13 @@ jobs:
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            # 1. On va dans le dossier API pour récupérer le code
             cd ~/chasse-aux-sorcieres/api
             git pull origin main
-
-            # 2. On remonte au dossier parent pour lancer Docker
             cd ..
 
-            # 3. On ne reconstruit QUE l'API (--build api)
-            docker compose up -d --build api
-
-            # 4. Nettoyage
+            # 1. On build d'abord (ultra rapide maintenant grâce au cache)
+            docker compose build api
+            # 2. On applique le changement
+            docker compose up -d api
+            # 3. Nettoyage
             docker image prune -f

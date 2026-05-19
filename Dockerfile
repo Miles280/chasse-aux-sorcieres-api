@@ -25,14 +25,14 @@ WORKDIR /var/www/html
 ENV APP_ENV=prod
 ENV COMPOSER_ALLOW_SUPERUSER=1
 
-# Copier le projet
-COPY . .
+# SOLUTION : On copie TOUT le projet en attribuant DIRECTEMENT les droits à www-data
+COPY --chown=www-data:www-data . .
 
-# Installer les dépendances sans les outils de dev (no-dev)
+# On s'assure que le dossier var existe avec les bons droits avant composer
+RUN mkdir -p /var/www/html/var && chown -R www-data:www-data /var/www/html/var
+
+# Installer les dépendances. Composer va s'exécuter en créant les fichiers directement au bon format
 RUN composer install --no-dev --no-interaction --optimize-autoloader
-
-# Droits sur le cache/logs
-RUN chown -R www-data:www-data /var/www/html/var
 
 EXPOSE 80
 CMD ["apache2-foreground"]

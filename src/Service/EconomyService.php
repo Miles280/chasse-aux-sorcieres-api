@@ -472,7 +472,7 @@ class EconomyService
             $reward,
             $user,
             null,
-            "Récompense journalière"
+            "Gain quotidien"
         );
 
         $this->em->persist($cooldown);

@@ -3,7 +3,7 @@
 namespace App\Controller\Bot;
 
 use App\Repository\GameRepository;
-use App\Service\GameCompositionService;
+use App\Service\CompositionService;
 use App\Service\RequestPayloadService;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -11,10 +11,10 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 
 #[Route('/bot/composition')]
-final class GameCompositionBotController extends AbstractBotController
+final class CompositionBotController extends AbstractBotController
 {
     public function __construct(
-        private GameCompositionService $gameCompositionService
+        private CompositionService $gameCompositionService
     ) {}
 
     #[Route('/{id}', name: 'app_bot_game_composition_view', methods: ['GET'])]

@@ -75,7 +75,7 @@ class InscriptionService
         $game = $this->em->getRepository(Game::class)->find($gameId);
         if (!$game) throw new GameException("Partie introuvable.", Response::HTTP_NOT_FOUND);
 
-        if ($game->getStatus() !== GameStatus::WAITING) {
+        if ($game->getStatus() !== GameStatus::WAITING && $action !== 'spectate') {
             throw new GameException("Les inscriptions sont fermées.", Response::HTTP_FORBIDDEN);
         }
 

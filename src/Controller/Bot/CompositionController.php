@@ -11,13 +11,13 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 
 #[Route('/bot/composition')]
-final class CompositionBotController extends AbstractBotController
+final class CompositionController extends AbstractBotController
 {
     public function __construct(
         private CompositionService $gameCompositionService
     ) {}
 
-    #[Route('/{id}', name: 'app_bot_game_composition_view', methods: ['GET'])]
+    #[Route('/{id}', name: 'app_bot_composition_view', methods: ['GET'])]
     public function viewComposition(int $id, GameRepository $gameRepository): JsonResponse
     {
         try {          
@@ -38,7 +38,7 @@ final class CompositionBotController extends AbstractBotController
         }
     }
 
-    #[Route('/{id}/add', name: 'app_bot_game_composition_add', methods: ['POST'])]
+    #[Route('/{id}/add', name: 'app_bot_composition_add', methods: ['POST'])]
     public function addComposition(int $id, Request $request, RequestPayloadService $payloadService): JsonResponse
     {
         try {
@@ -56,7 +56,7 @@ final class CompositionBotController extends AbstractBotController
         }
     }
 
-    #[Route('/{id}/remove', name: 'app_bot_game_composition_remove', methods: ['POST'])]
+    #[Route('/{id}/remove', name: 'app_bot_composition_remove', methods: ['POST'])]
     public function removeComposition(int $id, Request $request, RequestPayloadService $payloadService): JsonResponse
     {
         try {
@@ -73,7 +73,7 @@ final class CompositionBotController extends AbstractBotController
         }
     }
 
-    #[Route('/{id}/reset', name: 'app_bot_game_composition_reset', methods: ['GET'])]
+    #[Route('/{id}/reset', name: 'app_bot_composition_reset', methods: ['GET'])]
     public function resetComposition(int $id): JsonResponse
     {
         try {          

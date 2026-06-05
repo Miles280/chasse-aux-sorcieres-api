@@ -6,11 +6,14 @@ use App\Entity\Game;
 use App\Entity\Role;
 use App\Enum\GameStatus;
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\Serializer\Normalizer\NormalizerInterface; // 👈 AJOUT DE L'IMPORT
 
 class GameService
 {
+    // 1. On injecte le Normalizer de Symfony dans le constructeur
     public function __construct(
-        private EntityManagerInterface $em
+        private EntityManagerInterface $em,
+        private NormalizerInterface $normalizer 
     ) {}
 
     /**
@@ -18,16 +21,12 @@ class GameService
      */
     public function generateRandomDistribution(Game $game): array
     {
-        // 1. On récupère les joueurs et on EXCLUT les spectateurs
         $allPlayers = $game->getGamePlayers()->toArray();
         $activePlayers = array_filter($allPlayers, fn($p) => !$p->isSpectator());
-        
-        // Réindexe le tableau de 0 à X proprement après le filtre
         $activePlayers = array_values($activePlayers); 
         
         $compositions = $game->getCompositions()->toArray();
 
-        // 2. Vérification de cohérence
         if (count($activePlayers) !== count($compositions)) {
             throw new \LogicException(sprintf(
                 "Incohérence : %d joueurs pour %d rôles définis dans la composition.", 
@@ -36,17 +35,15 @@ class GameService
             ));
         }
 
-        // 3. On extrait les rôles de la composition et on les mélange
         $roles = array_map(fn($comp) => $comp->getRole(), $compositions);
         shuffle($roles);
 
-        // 4. On crée la distribution prête à être envoyée en JSON
         $distribution = [];
         foreach ($activePlayers as $index => $player) {
             $role = $roles[$index];
             $distribution[] = [
                 'discordId' => $player->getUser()->getDiscordId(), 
-                'role' => $role
+                'role' => $this->formatRole($role)
             ];
         }
 
@@ -58,42 +55,70 @@ class GameService
      */
     public function startGame(Game $game, array $validatedDistribution = []): array
     {
-        // Si aucune distribution n'est fournie ("Fast start"), on utilise ta méthode
         if (empty($validatedDistribution)) {
             $validatedDistribution = $this->generateRandomDistribution($game);
         }
 
         $players = $game->getGamePlayers();
+        $finalDistribution = []; 
 
-        // Application de la distribution
         foreach ($validatedDistribution as $assignment) {
             $player = $this->findPlayerByDiscordId($players, $assignment['discordId']);
-            
             $roleData = $assignment['role'];
             
-            // Si ça vient du JSON du bot, c'est un tableau, on récupère sa référence via l'id.
             if ($roleData instanceof Role) {
-                $player->setTrueRole($roleData); 
+                $roleEntity = $roleData;
             } else {
-                $roleEntity = $this->em->getReference(Role::class, $roleData['id']);
-                $player->setTrueRole($roleEntity); 
+                $roleEntity = $this->em->getRepository(Role::class)->find($roleData['id']);
+                if (!$roleEntity) {
+                    throw new \LogicException("Rôle avec l'ID {$roleData['id']} introuvable.");
+                }
             }
+
+            $player->setTrueRole($roleEntity);
+
+            $finalDistribution[] = [
+                'discordId' => $assignment['discordId'],
+                'role' => $this->formatRole($roleEntity) 
+            ];
         }
 
-        // Mise à jour de la partie
         $game->setStatus(GameStatus::PLAYING);
         $game->setStartedAt(new \DateTimeImmutable());
         
         $this->em->flush();
 
         return [
-            'distribution' => $validatedDistribution
+            'distribution' => $finalDistribution 
         ];
     }
 
     /**
-     * Ta fonction utilitaire adaptée pour chercher par Discord ID
+     * 🛠️ Formate proprement l'entité Role et utilise le Normalizer pour les pouvoirs
      */
+    private function formatRole(Role $role): array
+    {
+        $powersData = [];
+        
+        foreach ($role->getPowers() as $power) {
+            $powersData[] = $this->normalizer->normalize($power, null, ['groups' => ['game:read']]);
+        }
+
+        return [
+            'id' => $role->getId(),
+            'name' => $role->getName(),
+            'description' => $role->getDescription(),
+            'minPlayer' => $role->getMinPlayer(),
+            'camp' => $role->getCamp(),
+            'goal' => $role->getGoal(),
+            'notes' => $role->getNotes(),
+            'imageUrl' => $role->getImageUrl(),
+            'powers' => $powersData, // 🔥 Contient maintenant absolument TOUTES les propriétés de ton entité Power
+            'alignments' => $role->getAlignments(),
+            'unique' => $role->isUnique(), 
+        ];
+    }
+
     private function findPlayerByDiscordId(iterable $players, string $discordId)
     {
         foreach ($players as $player) {

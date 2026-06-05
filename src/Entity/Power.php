@@ -20,44 +20,44 @@ class Power
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    #[Groups(['power:read', 'role:read'])]
+    #[Groups(['power:read', 'role:read', 'game:read'])]
     private ?int $id = null;
 
     #[ORM\Column(length: 100)]
-    #[Groups(['power:read', 'power:write', 'role:read', 'role:write'])]
+    #[Groups(['power:read', 'power:write', 'role:read', 'role:write', 'game:read'])]
     private ?string $title = null;
     
     #[ORM\Column(type: Types::TEXT)]
-    #[Groups(['power:read', 'power:write', 'role:read', 'role:write'])]
+    #[Groups(['power:read', 'power:write', 'role:read', 'role:write', 'game:read'])]
     private ?string $description = null;
     
     #[ORM\Column]
     // #[SerializedName('isDayPower')]
-    #[Groups(['power:read', 'power:write', 'role:read', 'role:write'])]
+    #[Groups(['power:read', 'power:write', 'role:read', 'role:write', 'game:read'])]
     private ?bool $isDayPower = false;
     
     #[ORM\Column]
     // #[SerializedName('isPassive')]
-    #[Groups(['power:read', 'power:write', 'role:read', 'role:write'])]
+    #[Groups(['power:read', 'power:write', 'role:read', 'role:write', 'game:read'])]
     private ?bool $isPassive = false;
     
     #[ORM\Column(nullable: true)]
-    #[Groups(['power:read', 'power:write', 'role:read', 'role:write'])]
+    #[Groups(['power:read', 'power:write', 'role:read', 'role:write', 'game:read'])]
     private ?int $usageLimit = null;
     
     #[Gedmo\SortablePosition]
     #[ORM\Column(type: 'integer')]
-    #[Groups(['power:read', 'power:write', 'role:read', 'role:write'])]
+    #[Groups(['power:read', 'power:write', 'role:read', 'role:write', 'game:read'])]
     private int $position = 0;
     
     #[ORM\Column]
-    #[Groups(['power:read', 'power:write', 'role:read', 'role:write'])]
+    #[Groups(['power:read', 'power:write', 'role:read', 'role:write', 'game:read'])]
     private ?bool $leavingHouse = false;
     
     #[Gedmo\SortableGroup]
     #[ORM\ManyToOne(inversedBy: 'powers')]
     #[ORM\JoinColumn(nullable: false)]
-    #[Groups(['power:read', 'power:write'])]
+    #[Groups(['power:read', 'power:write', 'game:read'])]
     private ?Role $role = null;
 
     public function getId(): ?int

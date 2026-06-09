@@ -86,4 +86,67 @@ final class GameController extends AbstractBotController
             return $this->errorResponse("Erreur lors du lancement : " . $e->getMessage(), Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
+
+    #[Route('/{id}/channels', name: 'app_bot_game_update_channels', methods: ['PATCH'])]
+    public function updateChannels(
+        int $id, 
+        Request $request, 
+        GameRepository $gameRepository
+    ): JsonResponse {
+        try {
+            $game = $gameRepository->find($id);
+
+            if (!$game) {
+                return $this->errorResponse("La partie $id n'existe pas.", Response::HTTP_NOT_FOUND);
+            }
+
+            // Récupération des données brutes
+            $payload = json_decode($request->getContent(), true);
+            $gameChannels = $payload['gameChannels'] ?? [];
+            $playersChannels = $payload['playersChannels'] ?? [];
+
+            // Délégation de toute la logique complexe au service
+            $this->gameService->updateGameChannels($game, $gameChannels, $playersChannels);
+
+            return $this->successResponse([
+                'message' => 'Salons enregistrés avec succès.',
+                'gameChannels' => $game->getDiscordChannels()
+            ]);
+
+        } catch (\Throwable $e) {
+            return $this->errorResponse("Erreur lors de la mise à jour des salons : " . $e->getMessage(), Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    #[Route('/{id}/trackersmessages', name: 'app_bot_game_update_trackers', methods: ['PATCH'])]
+    public function updateTrackers(
+        int $id, 
+        Request $request, 
+        GameRepository $gameRepository
+    ): JsonResponse {
+        try {
+            $game = $gameRepository->find($id);
+
+            if (!$game) {
+                return $this->errorResponse("La partie $id n'existe pas.", Response::HTTP_NOT_FOUND);
+            }
+
+            // Récupération des données brutes
+            $payload = json_decode($request->getContent(), true);
+            $publicTrackerId = $payload['publicTrackerMessageId'] ?? null;
+            $mjTrackerId = $payload['mjTrackerMessageId'] ?? null;
+
+            // Délégation au service
+            $this->gameService->updateGameTrackers($game, $publicTrackerId, $mjTrackerId);
+
+            return $this->successResponse([
+                'message' => 'Messages de suivi enregistrés avec succès.',
+                'publicTracker' => $game->getPublicTrackerMessageId(),
+                'mjTracker' => $game->getMjTrackerMessageId()
+            ]);
+
+        } catch (\Throwable $e) {
+            return $this->errorResponse("Erreur lors de la mise à jour des trackers : " . $e->getMessage(), Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
 }

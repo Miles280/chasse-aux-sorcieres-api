@@ -94,7 +94,7 @@ class GameService
     }
 
     /**
-     * 🛠️ Formate proprement l'entité Role et utilise le Normalizer pour les pouvoirs
+     * Formate proprement l'entité Role et utilise le Normalizer pour les pouvoirs
      */
     private function formatRole(Role $role): array
     {
@@ -113,7 +113,7 @@ class GameService
             'goal' => $role->getGoal(),
             'notes' => $role->getNotes(),
             'imageUrl' => $role->getImageUrl(),
-            'powers' => $powersData, // 🔥 Contient maintenant absolument TOUTES les propriétés de ton entité Power
+            'powers' => $powersData, 
             'alignments' => $role->getAlignments(),
             'unique' => $role->isUnique(), 
         ];
@@ -127,5 +127,51 @@ class GameService
             }
         }
         throw new \LogicException("Le joueur avec l'identifiant Discord $discordId est introuvable.");
+    }
+
+    /**
+     * Met à jour les salons Discord liés à la partie et aux joueurs
+     */
+    public function updateGameChannels(Game $game, array $gameChannels, array $playersChannels): void
+    {
+        // 1. Mise à jour des salons globaux de la partie (Votes, Vocaux, etc.)
+        if (!empty($gameChannels)) {
+            $game->setDiscordChannels($gameChannels);
+        }
+
+        // 2. Mise à jour des salons privés (Carnets) des joueurs
+        if (!empty($playersChannels)) {
+            // Indexation par discordId pour éviter de boucler inutilement
+            $channelsByDiscordId = [];
+            foreach ($playersChannels as $pc) {
+                if (isset($pc['discordId']) && isset($pc['channelId'])) {
+                    $channelsByDiscordId[$pc['discordId']] = $pc['channelId'];
+                }
+            }
+
+            // Assignation des salons aux joueurs
+            foreach ($game->getGamePlayers() as $gamePlayer) {
+                // Assure-toi que la méthode getDiscordId() existe bien dans ton entité User
+                $userDiscordId = $gamePlayer->getUser()->getDiscordId(); 
+                
+                if (isset($channelsByDiscordId[$userDiscordId])) {
+                    $gamePlayer->setDiscordChannelId($channelsByDiscordId[$userDiscordId]);
+                }
+            }
+        }
+
+        // On sauvegarde les modifications en base de données
+        $this->em->flush();
+    }
+
+    /**
+     * Met à jour les IDs des messages de suivi (Trackers)
+     */
+    public function updateGameTrackers(Game $game, ?string $publicTrackerId, ?string $mjTrackerId): void
+    {
+        $game->setPublicTrackerMessageId($publicTrackerId);
+        $game->setMjTrackerMessageId($mjTrackerId);
+        
+        $this->em->flush();
     }
 }

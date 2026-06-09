@@ -78,6 +78,10 @@ class Game
     #[Groups(['game:read', 'game:write'])]
     private ?string $mjTrackerMessageId = null;
 
+    #[ORM\Column(type: 'json', nullable: true)]
+    #[Groups(['game:read', 'game:write'])]
+    private ?array $discordChannels = [];
+
     /**
      * @var Collection<int, GamePlayer>
      */
@@ -255,6 +259,17 @@ class Game
     public function setMjTrackerMessageId(?string $mjTrackerMessageId): static
     {
         $this->mjTrackerMessageId = $mjTrackerMessageId;
+        return $this;
+    }
+    
+    public function getDiscordChannels(): ?array
+    {
+        return $this->discordChannels;
+    }
+
+    public function setDiscordChannels(?array $discordChannels): static
+    {
+        $this->discordChannels = $discordChannels;
         return $this;
     }
 

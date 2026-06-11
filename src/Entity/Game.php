@@ -68,15 +68,11 @@ class Game
 
     #[ORM\Column(length: 50, nullable: true)]
     #[Groups(['game:read', 'game:write'])]
-    private ?string $compoMessageId = null;
+    private ?string $mjDashboardMessageId = null;
 
     #[ORM\Column(length: 50, nullable: true)]
     #[Groups(['game:read', 'game:write'])]
     private ?string $publicTrackerMessageId = null;
-
-    #[ORM\Column(length: 50, nullable: true)]
-    #[Groups(['game:read', 'game:write'])]
-    private ?string $mjTrackerMessageId = null;
 
     #[ORM\Column(type: 'json', nullable: true)]
     #[Groups(['game:read', 'game:write'])]
@@ -230,13 +226,14 @@ class Game
         return $this;
     }
     
-    public function getCompoMessageId(): ?string
+    public function getMjDashboardMessageId(): ?string
     {
-        return $this->compoMessageId;
+        return $this->mjDashboardMessageId;
     }
-    public function setCompoMessageId(?string $compoMessageId): static
+
+    public function setMjDashboardMessageId(?string $mjDashboardMessageId): static
     {
-        $this->compoMessageId = $compoMessageId;
+        $this->mjDashboardMessageId = $mjDashboardMessageId;
         return $this;
     }
 
@@ -248,17 +245,6 @@ class Game
     public function setPublicTrackerMessageId(?string $publicTrackerMessageId): static
     {
         $this->publicTrackerMessageId = $publicTrackerMessageId;
-        return $this;
-    }
-
-    public function getMjTrackerMessageId(): ?string
-    {
-        return $this->mjTrackerMessageId;
-    }
-
-    public function setMjTrackerMessageId(?string $mjTrackerMessageId): static
-    {
-        $this->mjTrackerMessageId = $mjTrackerMessageId;
         return $this;
     }
     

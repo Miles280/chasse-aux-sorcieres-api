@@ -86,7 +86,7 @@ class GamePlayer
         return $this;
     }
 
-    public function isSpectator(): ?bool
+    public function getIsSpectator(): ?bool
     {
         return $this->isSpectator;
     }
@@ -97,7 +97,7 @@ class GamePlayer
         return $this;
     }
 
-    public function isAlive(): ?bool
+    public function getIsAlive(): ?bool
     {
         return $this->isAlive;
     }

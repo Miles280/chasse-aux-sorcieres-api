@@ -57,7 +57,7 @@ class Power
     #[Gedmo\SortableGroup]
     #[ORM\ManyToOne(inversedBy: 'powers')]
     #[ORM\JoinColumn(nullable: false)]
-    #[Groups(['power:read', 'power:write', 'game:read'])]
+    #[Groups(['power:read', 'power:write'])]
     private ?Role $role = null;
 
     public function getId(): ?int

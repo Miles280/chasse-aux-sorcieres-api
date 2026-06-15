@@ -8,6 +8,7 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
 
 #[Route('/bot/game')]
 final class GameController extends AbstractBotController
@@ -17,19 +18,22 @@ final class GameController extends AbstractBotController
     ) {}
 
     #[Route('/{id}', name: 'app_bot_game_view', methods: ['GET'])]
-    public function viewGame(int $id, GameRepository $gameRepository): JsonResponse
+    public function viewGame(int $id, GameRepository $gameRepository, NormalizerInterface $normalizer): JsonResponse
     {
         try {
-            // On cherche la partie. Si elle n'existe pas, on le signale.
             $game = $gameRepository->find($id);
+            
             if (!$game) {
                 return $this->errorResponse("La partie $id n'existe pas.", Response::HTTP_NOT_FOUND);
             }
-            // On récupère toutes les infos pertinentes pour le bot 
-            // On les envoies
-            return $this->successResponse([
-                'infopertinente' => 'oui'
+
+            // Le normalizer transforme l'entité en tableau PHP en respectant tes groupes
+            $gameData = $normalizer->normalize($game, null, [
+                'groups' => ['game:read']
             ]);
+
+            return $this->successResponse($gameData);
+            
         } catch (\Throwable $e) {
             return $this->errorResponse("Erreur lors de la récupération : " . $e->getMessage(), Response::HTTP_INTERNAL_SERVER_ERROR);
         }

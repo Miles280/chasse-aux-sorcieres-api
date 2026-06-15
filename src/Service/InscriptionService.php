@@ -85,7 +85,7 @@ class InscriptionService
         switch ($action) {
             case 'join':
                 if ($existing) {
-                    if (!$existing->isSpectator()) {
+                    if (!$existing->getIsSpectator()) {
                         throw new GameException("Tu es déjà inscrit comme joueur.", Response::HTTP_BAD_REQUEST);
                     }
                     // Il était spectateur, il devient joueur
@@ -98,7 +98,7 @@ class InscriptionService
 
             case 'spectate':
                 if ($existing) {
-                    if ($existing->isSpectator()) {
+                    if ($existing->getIsSpectator()) {
                         throw new GameException("Tu es déjà spectateur.", Response::HTTP_BAD_REQUEST);
                     }
                     // Il est joueur, il ne peut pas devenir spectateur
@@ -112,7 +112,7 @@ class InscriptionService
             case 'leave':
                 if (!$existing) {
                     throw new GameException("Tu n'es pas dans cette partie.", Response::HTTP_BAD_REQUEST);
-                } else if ($existing->isSpectator()) {
+                } else if ($existing->getIsSpectator()) {
                     throw new GameException("Tu n'es pas inscrit à cette partie.", Response::HTTP_BAD_REQUEST);
                 }
                 $this->em->remove($existing);
@@ -174,7 +174,7 @@ class InscriptionService
     public function getDiscordIdsFromPlayers(Game $game): array
     {
         return array_values($game->getGamePlayers()
-            ->filter(fn(GamePlayer $gp) => !$gp->isSpectator())
+            ->filter(fn(GamePlayer $gp) => !$gp->getIsSpectator())
             ->map(fn(GamePlayer $gp) => $gp->getUser()->getDiscordId())
             ->toArray());
     }
@@ -185,7 +185,7 @@ class InscriptionService
     public function getDiscordIdsFromSpectators(Game $game): array
     {
         return array_values($game->getGamePlayers()
-            ->filter(fn(GamePlayer $gp) => $gp->isSpectator())
+            ->filter(fn(GamePlayer $gp) => $gp->getIsSpectator())
             ->map(fn(GamePlayer $gp) => $gp->getUser()->getDiscordId())
             ->toArray());
     }

@@ -11,17 +11,23 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
 
 #[Route('/bot/inscription')]
 final class InscriptionController extends AbstractBotController
 {
     private InscriptionService $inscriptionService;
     private DiscordUserManager $discordUserService;
+    private NormalizerInterface $normalizer;
 
-    public function __construct(InscriptionService $inscriptionService, DiscordUserManager $discordUserService)
-    {
+    public function __construct(
+        InscriptionService $inscriptionService, 
+        DiscordUserManager $discordUserService,
+        NormalizerInterface $normalizer
+    ) {
         $this->inscriptionService = $inscriptionService;
         $this->discordUserService = $discordUserService;
+        $this->normalizer = $normalizer;
     }
 
     #[Route('/create', name: 'app_bot_game_create', methods: ['POST'])]
@@ -33,10 +39,10 @@ final class InscriptionController extends AbstractBotController
             $gameMaster = $this->discordUserService->findOrCreateUserByDiscordId($payload['gameMasterId']);
             $game = $this->inscriptionService->createWaitingGame($gameMaster);
 
-            return $this->successResponse([
-                'id' => $game->getId(),
-                'gameMasterId' => $gameMaster->getDiscordId(),
-            ]);
+            // 🟢 On utilise les groupes de sérialisation
+            $data = $this->normalizer->normalize($game, null, ['groups' => ['game:read', 'gameplayer:read']]);
+            
+            return $this->successResponse($data);
 
         } catch (InvalidPayloadException $e) {
             return $this->errorResponse($e->getMessage(), Response::HTTP_BAD_REQUEST);
@@ -57,14 +63,9 @@ final class InscriptionController extends AbstractBotController
                 return $this->errorResponse("Aucune partie en attente.", Response::HTTP_NOT_FOUND);
             }
 
-            return $this->successResponse([
-                'id' => $game->getId(),
-                'gameMasterId' => $game->getGameMaster()->getDiscordId(),
-                'inscriptionMessageId' => $game->getInscriptionMessageId(),
-                'compoMessageId' => $game->getCompoMessageId(),
-                'players' => $this->inscriptionService->getDiscordIdsFromPlayers($game),
-                'spectators' => $this->inscriptionService->getDiscordIdsFromSpectators($game) 
-            ]);
+            $data = $this->normalizer->normalize($game, null, ['groups' => ['game:read', 'gameplayer:read']]);
+            return $this->successResponse($data);
+
         } catch (\Throwable $e) {
             return $this->errorResponse($e->getMessage(), Response::HTTP_INTERNAL_SERVER_ERROR);
         }
@@ -75,7 +76,6 @@ final class InscriptionController extends AbstractBotController
     {
         try {
             $payload = $payloadService->extractValidatedPayload($request, ['discordId']);
-
             $gameId = $this->inscriptionService->getCurrentWaitingGame()->getId();
 
             $game = $this->inscriptionService->giveGameMaster(
@@ -83,20 +83,11 @@ final class InscriptionController extends AbstractBotController
                 $payload['discordId']
             );
 
-            return $this->successResponse([
-                    'id' => $game->getId(),
-                    'gameMasterId' => $game->getGameMaster()->getDiscordId(),
-                    'inscriptionMessageId' => $game->getInscriptionMessageId(),
-                    'compoMessageId' => $game->getCompoMessageId(),
-                    'players' => $this->inscriptionService->getDiscordIdsFromPlayers($game),
-                    'spectators' => $this->inscriptionService->getDiscordIdsFromSpectators($game) 
-                ]);
+            $data = $this->normalizer->normalize($game, null, ['groups' => ['game:read', 'gameplayer:read']]);
+            return $this->successResponse($data);
 
         } catch (\Throwable $e) {
-            return $this->errorResponse(
-                $e->getMessage(),
-                Response::HTTP_BAD_REQUEST
-            );
+            return $this->errorResponse($e->getMessage(), Response::HTTP_BAD_REQUEST);
         }
     }
 
@@ -124,14 +115,9 @@ final class InscriptionController extends AbstractBotController
             
             $game = $this->inscriptionService->getGameById($id);
 
-            return $this->successResponse([
-                'id' => $game->getId(),
-                'gameMasterId' => $game->getGameMaster()->getDiscordId(),
-                'inscriptionMessageId' => $game->getInscriptionMessageId(),
-                'compoMessageId' => $game->getCompoMessageId(),
-                'players' => $this->inscriptionService->getDiscordIdsFromPlayers($game),
-                'spectators' => $this->inscriptionService->getDiscordIdsFromSpectators($game)
-            ]);
+            $data = $this->normalizer->normalize($game, null, ['groups' => ['game:read', 'gameplayer:read']]);
+            return $this->successResponse($data);
+
         } catch (\Throwable $e) {
             return $this->errorResponse($e->getMessage(), 500);
         }
@@ -158,17 +144,12 @@ final class InscriptionController extends AbstractBotController
             $game = $this->inscriptionService->getGameById($id);
 
             if (!$game) {
-                return throw new GameException("Partie introuvable.", Response::HTTP_NOT_FOUND);
+                throw new GameException("Partie introuvable.", Response::HTTP_NOT_FOUND);
             }
 
-            return $this->successResponse([
-                'id' => $game->getId(),
-                'gameMasterId' => $game->getGameMaster()->getDiscordId(),
-                'inscriptionMessageId' => $game->getInscriptionMessageId(),
-                'compoMessageId' => $game->getCompoMessageId(),
-                'players' => $this->inscriptionService->getDiscordIdsFromPlayers($game),
-                'spectators' => $this->inscriptionService->getDiscordIdsFromSpectators($game) 
-            ]);
+            $data = $this->normalizer->normalize($game, null, ['groups' => ['game:read', 'gameplayer:read']]);
+            return $this->successResponse($data);
+
         } catch (GameException $e) {
             return $this->errorResponse($e->getMessage(), $e->getCode() ?: Response::HTTP_BAD_REQUEST);
         } catch (\Throwable $e) {

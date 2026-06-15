@@ -68,11 +68,15 @@ class Game
 
     #[ORM\Column(length: 50, nullable: true)]
     #[Groups(['game:read', 'game:write'])]
-    private ?string $mjDashboardMessageId = null;
+    private ?string $compoMessageId = null;
 
     #[ORM\Column(length: 50, nullable: true)]
     #[Groups(['game:read', 'game:write'])]
     private ?string $publicTrackerMessageId = null;
+
+    #[ORM\Column(length: 50, nullable: true)]
+    #[Groups(['game:read', 'game:write'])]
+    private ?string $mjTrackerMessageId = null;
 
     #[ORM\Column(type: 'json', nullable: true)]
     #[Groups(['game:read', 'game:write'])]
@@ -89,14 +93,12 @@ class Game
      * @var Collection<int, GameLog>
      */
     #[ORM\OneToMany(targetEntity: GameLog::class, mappedBy: 'game', orphanRemoval: true)]
-    #[Groups(['game:read'])]
     private Collection $gameLogs;
 
     /**
      * @var Collection<int, GameComposition>
      */
     #[ORM\OneToMany(targetEntity: GameComposition::class, mappedBy: 'game', orphanRemoval: true)]
-    #[Groups(['game:read'])]
     private Collection $compositions;
 
     public function __construct()
@@ -107,7 +109,7 @@ class Game
 
         $this->createdAt = new \DateTimeImmutable();
         $this->status = GameStatus::WAITING;
-        $this->currentStep = GameStep::DAY;
+        $this->currentStep = GameStep::DUSK;
         $this->dayNumber = 0; 
     }
 
@@ -226,14 +228,13 @@ class Game
         return $this;
     }
     
-    public function getMjDashboardMessageId(): ?string
+    public function getCompoMessageId(): ?string
     {
-        return $this->mjDashboardMessageId;
+        return $this->compoMessageId;
     }
-
-    public function setMjDashboardMessageId(?string $mjDashboardMessageId): static
+    public function setCompoMessageId(?string $compoMessageId): static
     {
-        $this->mjDashboardMessageId = $mjDashboardMessageId;
+        $this->compoMessageId = $compoMessageId;
         return $this;
     }
 
@@ -245,6 +246,17 @@ class Game
     public function setPublicTrackerMessageId(?string $publicTrackerMessageId): static
     {
         $this->publicTrackerMessageId = $publicTrackerMessageId;
+        return $this;
+    }
+
+    public function getMjTrackerMessageId(): ?string
+    {
+        return $this->mjTrackerMessageId;
+    }
+
+    public function setMjTrackerMessageId(?string $mjTrackerMessageId): static
+    {
+        $this->mjTrackerMessageId = $mjTrackerMessageId;
         return $this;
     }
     

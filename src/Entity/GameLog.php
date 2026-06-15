@@ -19,7 +19,7 @@ class GameLog
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    #[Groups(['game:read', 'gamelog:read'])]
+    #[Groups(['gamelog:read'])]
     private ?int $id = null;
 
     #[ORM\ManyToOne(inversedBy: 'gameLogs')]
@@ -28,19 +28,19 @@ class GameLog
     private ?Game $game = null;
 
     #[ORM\ManyToOne]
-    #[Groups(['game:read', 'gamelog:read', 'gamelog:write'])]
+    #[Groups(['gamelog:read', 'gamelog:write'])]
     private ?GamePlayer $deadPlayer = null;
 
     #[ORM\Column(length: 50, nullable: true, enumType: DeathCause::class)]
-    #[Groups(['game:read', 'gamelog:read', 'gamelog:write'])]
+    #[Groups(['gamelog:read', 'gamelog:write'])]
     private ?DeathCause $deathCause = null;
 
     #[ORM\Column]
-    #[Groups(['game:read', 'gamelog:read', 'gamelog:write'])]
+    #[Groups(['gamelog:read', 'gamelog:write'])]
     private ?int $dayNumber = null;
 
     #[ORM\Column(length: 50, nullable: true, enumType: GameStep::class)]
-    #[Groups(['game:read', 'gamelog:read', 'gamelog:write'])]
+    #[Groups(['gamelog:read', 'gamelog:write'])]
     private ?GameStep $step = null;
 
     public function getId(): ?int

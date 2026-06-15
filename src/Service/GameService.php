@@ -22,7 +22,7 @@ class GameService
     public function generateRandomDistribution(Game $game): array
     {
         $allPlayers = $game->getGamePlayers()->toArray();
-        $activePlayers = array_filter($allPlayers, fn($p) => !$p->isSpectator());
+        $activePlayers = array_filter($allPlayers, fn($p) => !$p->getIsSpectator());
         $activePlayers = array_values($activePlayers); 
         
         $compositions = $game->getCompositions()->toArray();

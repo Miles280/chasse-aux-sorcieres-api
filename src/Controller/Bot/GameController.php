@@ -4,6 +4,7 @@ namespace App\Controller\Bot;
 
 use App\Repository\GameRepository;
 use App\Service\GameService;
+use App\Service\RequestPayloadService;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -93,10 +94,7 @@ final class GameController extends AbstractBotController
 
     #[Route('/{id}/channels', name: 'app_bot_game_update_channels', methods: ['PATCH'])]
     public function updateChannels(
-        int $id, 
-        Request $request, 
-        GameRepository $gameRepository
-    ): JsonResponse {
+        int $id, Request $request, GameRepository $gameRepository): JsonResponse {
         try {
             $game = $gameRepository->find($id);
 
@@ -123,11 +121,7 @@ final class GameController extends AbstractBotController
     }
 
     #[Route('/{id}/trackersmessages', name: 'app_bot_game_update_trackers', methods: ['PATCH'])]
-    public function updateTrackers(
-        int $id, 
-        Request $request, 
-        GameRepository $gameRepository
-    ): JsonResponse {
+    public function updateTrackers( int $id, Request $request, GameRepository $gameRepository): JsonResponse {
         try {
             $game = $gameRepository->find($id);
 
@@ -151,6 +145,36 @@ final class GameController extends AbstractBotController
 
         } catch (\Throwable $e) {
             return $this->errorResponse("Erreur lors de la mise à jour des trackers : " . $e->getMessage(), Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    #[Route('/{id}/step', name: 'app_bot_game_update_step', methods: ['PATCH'])]
+    public function updateStep(int $id, Request $request, GameRepository $gameRepository, NormalizerInterface $normalizer, RequestPayloadService $payloadService): JsonResponse {
+        try {
+            $payload = $payloadService->extractValidatedPayload($request, ['step']);
+            $nextStep = $payload['step'];
+
+            $game = $gameRepository->find($id);
+
+            if (!$game) {
+                return $this->errorResponse("La partie $id n'existe pas.", Response::HTTP_NOT_FOUND);
+            }
+
+            // Exécution du changement de phase dans le service
+            $this->gameService->changeGameStep($game, $nextStep);
+
+            // On normalise la game mise à jour pour la renvoyer directement au bot
+            $gameData = $normalizer->normalize($game, null, [
+                'groups' => ['game:read']
+            ]);
+
+            return $this->successResponse($gameData);
+
+        } catch (\InvalidArgumentException $e) {
+            // Capturera l'erreur si la phase envoyée n'existe pas dans l'Enum
+            return $this->errorResponse($e->getMessage(), Response::HTTP_BAD_REQUEST);
+        } catch (\Throwable $e) {
+            return $this->errorResponse("Erreur lors du changement de phase : " . $e->getMessage(), Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
 }

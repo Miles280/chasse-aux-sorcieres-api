@@ -5,6 +5,7 @@ namespace App\Service;
 use App\Entity\Game;
 use App\Entity\Role;
 use App\Enum\GameStatus;
+use App\Enum\GameStep;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Serializer\Normalizer\NormalizerInterface; // 👈 AJOUT DE L'IMPORT
 
@@ -172,6 +173,27 @@ class GameService
         $game->setPublicTrackerMessageId($publicTrackerId);
         $game->setMjTrackerMessageId($mjTrackerId);
         
+        $this->em->flush();
+    }
+
+    public function changeGameStep($game, string $nextStepRaw): void
+    {
+        // 1. Validation de la phase via l'Enum PHP
+        $nextStep = GameStep::tryFrom($nextStepRaw);
+        
+        if (!$nextStep) {
+            throw new \InvalidArgumentException("La phase '$nextStepRaw' n'est pas une phase de jeu valide.");
+        }
+
+        // 2. Logique métier : Si on repasse à la NUIT depuis le Crépuscule, on entame un nouveau jour !
+        if ($game->getCurrentStep() === GameStep::DUSK && $nextStep === GameStep::NIGHT) {
+            $game->setDayNumber($game->getDayNumber() + 1);
+        }
+
+        // 3. Mise à jour de la phase
+        $game->setCurrentStep($nextStep);
+
+        // 4. Sauvegarde en BDD
         $this->em->flush();
     }
 }

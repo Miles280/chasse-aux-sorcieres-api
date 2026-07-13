@@ -34,46 +34,46 @@ class Role
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    #[Groups(['role:read', 'game:read'])]
+    #[Groups(['role:read', 'game:read', 'gameplayer:read'])]
     private ?int $id = null;
 
     #[ORM\Column(length: 100)]
-    #[Groups(['role:read', 'role:write', 'game:read'])]
+    #[Groups(['role:read', 'role:write', 'game:read', 'gameplayer:read'])]
     private ?string $name = null;
 
     #[ORM\Column(type: Types::TEXT)]
-    #[Groups(['role:read', 'role:write', 'game:read'])]
+    #[Groups(['role:read', 'role:write', 'game:read', 'gameplayer:read'])]
     private ?string $description = null;
 
     #[ORM\Column]
-    #[Groups(['role:read', 'role:write', 'game:read'])]
+    #[Groups(['role:read', 'role:write', 'game:read', 'gameplayer:read'])]
     private ?int $minPlayer = null;
 
     #[ORM\Column(type: 'string', enumType: Camp::class)]
-    #[Groups(['role:read', 'role:write', 'game:read'])]
+    #[Groups(['role:read', 'role:write', 'game:read', 'gameplayer:read'])]
     private ?Camp $camp = null;
 
     #[ORM\Column(type: Types::TEXT, nullable: true)]
-    #[Groups(['role:read', 'role:write', 'game:read'])]
+    #[Groups(['role:read', 'role:write', 'game:read', 'gameplayer:read'])]
     private ?string $goal = null;
 
     #[ORM\Column(type: Types::TEXT, nullable: true)] 
-    #[Groups(['role:read', 'role:write', 'game:read'])]
+    #[Groups(['role:read', 'role:write', 'game:read', 'gameplayer:read'])]
     private ?string $notes = null;
 
     #[ORM\Column(length: 255, nullable: true)]
-    #[Groups(['role:read', 'role:write', 'game:read'])]
+    #[Groups(['role:read', 'role:write', 'game:read', 'gameplayer:read'])]
     private ?string $imageUrl = null;
 
     #[ORM\Column]
-    #[Groups(['role:read', 'game:read'])]
+    #[Groups(['role:read', 'game:read', 'gameplayer:read'])]
     private ?bool $isUnique = true;
 
     /**
      * @var Collection<int, Power>
      */
     #[ORM\OneToMany(targetEntity: Power::class, mappedBy: 'role', orphanRemoval: true, cascade: ['persist'])]
-    #[Groups(['role:read', 'role:write', 'game:read'])]
+    #[Groups(['role:read', 'role:write', 'game:read', 'gameplayer:read'])]
     #[ORM\OrderBy(['position' => 'ASC'])]
     private Collection $powers;
 
@@ -81,7 +81,7 @@ class Role
      * @var string[] On stocke les valeurs (strings) en base
      */
     #[ORM\Column(type: 'json')]
-    #[Groups(['role:read', 'role:write', 'game:read'])]
+    #[Groups(['role:read', 'role:write', 'game:read', 'gameplayer:read'])]
     private array $alignments = [];
 
     public function __construct()

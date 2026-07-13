@@ -3,9 +3,12 @@
 namespace App\Service;
 
 use App\Entity\Game;
+use App\Entity\GameLog;
 use App\Entity\Role;
+use App\Enum\DeathCause;
 use App\Enum\GameStatus;
 use App\Enum\GameStep;
+use App\Repository\RoleRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Serializer\Normalizer\NormalizerInterface; // 👈 AJOUT DE L'IMPORT
 
@@ -14,7 +17,8 @@ class GameService
     // 1. On injecte le Normalizer de Symfony dans le constructeur
     public function __construct(
         private EntityManagerInterface $em,
-        private NormalizerInterface $normalizer 
+        private NormalizerInterface $normalizer,
+        private RoleRepository $roleRepository
     ) {}
 
     /**
@@ -194,6 +198,57 @@ class GameService
         $game->setCurrentStep($nextStep);
 
         // 4. Sauvegarde en BDD
+        $this->em->flush();
+    }
+
+    public function killPlayer(Game $game, string $discordId, string $deathCauseValue, bool $hideRole = false, ?int $fakeRoleId = null): void
+    {
+        // 1. Trouver le GamePlayer correspondant
+        $targetPlayer = null;
+        foreach ($game->getGamePlayers() as $gamePlayer) {
+            // Remplace par la bonne façon de vérifier l'identité de ton joueur (via User ou directement discordChannelId)
+            if ($gamePlayer->getUser()->getDiscordId() === $discordId) { 
+                $targetPlayer = $gamePlayer;
+                break;
+            }
+        }
+
+        if (!$targetPlayer) {
+            throw new \InvalidArgumentException("Joueur introuvable dans cette partie.");
+        }
+
+        if (!$targetPlayer->getIsAlive()) {
+            throw new \InvalidArgumentException("Ce joueur est déjà mort.");
+        }
+
+        // 3. Appliquer la mort
+        $targetPlayer->setIsAlive(false);
+
+        // 4. Gérer le rôle révélé (Ce qui sera affiché publiquement)
+        if ($hideRole) {
+            // S'il est caché, on pourrait le mettre à null, ou lui assigner un Role "Inconnu" depuis le repository
+            $targetPlayer->setRevealedRole(null); 
+        } elseif ($fakeRoleId) {
+            $fakeRole = $this->roleRepository->find($fakeRoleId);
+            if (!$fakeRole) {
+                throw new \InvalidArgumentException("Le faux rôle indiqué n'existe pas.");
+            }
+            $targetPlayer->setRevealedRole($fakeRole);
+        } else {
+            // Par défaut, le rôle révélé devient le vrai rôle
+            $targetPlayer->setRevealedRole($targetPlayer->getTrueRole());
+        }
+
+        // 5. Créer le GameLog
+        $log = new GameLog();
+        $log->setGame($game);
+        $log->setDeadPlayer($targetPlayer);
+        $log->setDeathCause(DeathCause::tryFrom($deathCauseValue)); 
+        $log->setDayNumber($game->getDayNumber());
+        $log->setStep($game->getCurrentStep());
+
+        $this->em->persist($log);
+        // $targetPlayer est déjà persisté par cascade/tracking de Doctrine
         $this->em->flush();
     }
 }

@@ -23,8 +23,8 @@ class RequestPayloadService
         }
 
         foreach ($requiredFields as $field) {
-            if (!isset($payload[$field])) {
-                throw new InvalidPayloadException('Champ manquant : $field');
+            if (!array_key_exists($field, $payload)) {
+                throw new InvalidPayloadException("Champ manquant : $field");
             }
         }
 

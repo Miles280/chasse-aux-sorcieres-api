@@ -268,4 +268,34 @@ final class GameController extends AbstractBotController
             return $this->errorResponse("Erreur lors de la récupération des morts : " . $e->getMessage(), Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
+
+    #[Route('/{id}/reveal', name: 'app_bot_game_reveal', methods: ['POST'])]
+    public function revealPlayer(int $id, Request $request, GameRepository $gameRepository, NormalizerInterface $normalizer,RequestPayloadService $payloadService): JsonResponse {
+        try {
+           
+            $game = $gameRepository->find($id);
+
+            if (!$game) {
+                return $this->errorResponse("La partie $id n'existe pas.", Response::HTTP_NOT_FOUND);
+            }
+            
+            $payload = $payloadService->extractValidatedPayload($request, ['discordId']);
+            $discordId = $payload['discordId']; 
+
+            // Délégation au GameService pour la logique métier
+            $this->gameService->revealPlayer($game, $discordId);
+
+            // On normalise le log et le joueur pour le retour bot
+            $gameData = $normalizer->normalize($game, null, [
+                'groups' => ['game:read']
+            ]);
+
+            return $this->successResponse($gameData);
+
+        } catch (\InvalidArgumentException $e) {
+            return $this->errorResponse($e->getMessage(), Response::HTTP_BAD_REQUEST);
+        } catch (\Throwable $e) {
+            return $this->errorResponse("Erreur lors de l'enregistrement du kill : " . $e->getMessage(), Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
 }

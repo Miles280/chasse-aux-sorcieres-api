@@ -206,7 +206,6 @@ class GameService
         // 1. Trouver le GamePlayer correspondant
         $targetPlayer = null;
         foreach ($game->getGamePlayers() as $gamePlayer) {
-            // Remplace par la bonne façon de vérifier l'identité de ton joueur (via User ou directement discordChannelId)
             if ($gamePlayer->getUser()->getDiscordId() === $discordId) { 
                 $targetPlayer = $gamePlayer;
                 break;
@@ -249,6 +248,31 @@ class GameService
 
         $this->em->persist($log);
         // $targetPlayer est déjà persisté par cascade/tracking de Doctrine
+        $this->em->flush();
+    }
+
+    public function revealPlayer(Game $game, string $discordId): void
+    {
+        // Trouver le GamePlayer correspondant
+        $targetPlayer = null;
+        foreach ($game->getGamePlayers() as $gamePlayer) {
+            if ($gamePlayer->getUser()->getDiscordId() === $discordId) { 
+                $targetPlayer = $gamePlayer;
+                break;
+            }
+        }
+
+        if (!$targetPlayer) {
+            throw new \InvalidArgumentException("Joueur introuvable dans cette partie.");
+        }
+
+        if ($targetPlayer->getRevealedRole()) {
+            throw new \InvalidArgumentException("Ce joueur est déjà révélé.");
+        }
+
+        $targetPlayer->setRevealedRole($targetPlayer->getTrueRole());
+        
+        $this->em->persist($targetPlayer);
         $this->em->flush();
     }
 }

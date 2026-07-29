@@ -5,6 +5,7 @@ namespace App\Service;
 use App\Entity\Game;
 use App\Entity\GameLog;
 use App\Entity\Role;
+use App\Enum\Camp;
 use App\Enum\DeathCause;
 use App\Enum\GameStatus;
 use App\Enum\GameStep;
@@ -273,6 +274,35 @@ class GameService
         $targetPlayer->setRevealedRole($targetPlayer->getTrueRole());
         
         $this->em->persist($targetPlayer);
+        $this->em->flush();
+    }
+
+    /**
+     * Clôture une partie en enregistrant le camp vainqueur et la date de fin.
+     * * @throws \InvalidArgumentException si le camp fourni est invalide
+     * @throws \LogicException si la partie est déjà terminée
+     */
+    public function finishGame(Game $game, string $winningCamp): void
+    {
+        // 1. On vérifie que la partie n'est pas déjà terminée
+        if ($game->getStatus() === GameStatus::FINISHED) {
+            throw new \LogicException("Cette partie est déjà terminée.");
+        }
+
+        // 2. Conversion et validation de la chaîne vers l'Enum Camp
+        $campEnum = Camp::tryFrom($winningCamp);
+
+        if (!$campEnum) {
+            throw new \InvalidArgumentException("Le camp '$winningCamp' n'est pas un camp valide.");
+        }
+
+        // 3. Mise à jour des propriétés de la partie
+        $game->setStatus(GameStatus::FINISHED);
+        $game->setWinningCamp($campEnum);
+        $game->setFinishedAt(new \DateTimeImmutable());
+
+        // 4. Sauvegarde en base de données
+        $this->em->persist($game);
         $this->em->flush();
     }
 }

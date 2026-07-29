@@ -64,7 +64,7 @@ final class GameController extends AbstractBotController
         }
     }
 
-    #[Route('/preview/{id}', name: 'app_bot_game_preview', methods: ['POST'])]
+    #[Route('/{id}/preview', name: 'app_bot_game_preview', methods: ['POST'])]
     public function previewDistribution(int $id, GameRepository $gameRepository): JsonResponse
     {
         try {          
@@ -90,7 +90,7 @@ final class GameController extends AbstractBotController
         }
     }
 
-    #[Route('/start/{id}', name: 'app_bot_game_start', methods: ['POST'])]
+    #[Route('/{id}/start', name: 'app_bot_game_start', methods: ['POST'])]
     public function start(int $id, Request $request, GameRepository $gameRepository): JsonResponse
     {
         try {          
@@ -236,6 +236,36 @@ final class GameController extends AbstractBotController
         }
     }
 
+    #[Route('/{id}/reveal', name: 'app_bot_game_reveal', methods: ['POST'])]
+    public function revealPlayer(int $id, Request $request, GameRepository $gameRepository, NormalizerInterface $normalizer,RequestPayloadService $payloadService): JsonResponse {
+        try {
+           
+            $game = $gameRepository->find($id);
+
+            if (!$game) {
+                return $this->errorResponse("La partie $id n'existe pas.", Response::HTTP_NOT_FOUND);
+            }
+            
+            $payload = $payloadService->extractValidatedPayload($request, ['discordId']);
+            $discordId = $payload['discordId']; 
+
+            // Délégation au GameService pour la logique métier
+            $this->gameService->revealPlayer($game, $discordId);
+
+            // On normalise pour le retour bot
+            $gameData = $normalizer->normalize($game, null, [
+                'groups' => ['game:read']
+            ]);
+
+            return $this->successResponse($gameData);
+
+        } catch (\InvalidArgumentException $e) {
+            return $this->errorResponse($e->getMessage(), Response::HTTP_BAD_REQUEST);
+        } catch (\Throwable $e) {
+            return $this->errorResponse("Erreur lors de l'enregistrement du kill : " . $e->getMessage(), Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
     #[Route('/{id}/night-deaths', name: 'app_bot_game_night_deaths', methods: ['GET'])]
     public function getNightDeaths(int $id, GameRepository $gameRepository, NormalizerInterface $normalizer): JsonResponse
     {
@@ -267,27 +297,60 @@ final class GameController extends AbstractBotController
         } catch (\Throwable $e) {
             return $this->errorResponse("Erreur lors de la récupération des morts : " . $e->getMessage(), Response::HTTP_INTERNAL_SERVER_ERROR);
         }
+    }    
+
+    #[Route('/{id}/first-night-deaths', name: 'app_bot_game_first_night_deaths', methods: ['GET'])]
+    public function getFirstNightDeaths(int $id, GameRepository $gameRepository, NormalizerInterface $normalizer): JsonResponse
+    {
+        try {
+            $game = $gameRepository->find($id);
+
+            if (!$game) {
+                return $this->errorResponse("La partie $id n'existe pas.", Response::HTTP_NOT_FOUND);
+            }
+
+            $deadPlayers = [];
+            // On part du principe que la première nuit se déroule au Jour 1.
+            $firstDay = 1; 
+
+            foreach ($game->getGameLogs() as $log) {
+                // On cible les morts du Jour 1 pendant la Nuit (ou l'Aube)
+                if ($log->getDayNumber() === $firstDay && in_array($log->getStep(), [GameStep::NIGHT, GameStep::DAWN])) {
+                    $player = $log->getDeadPlayer();
+                    if ($player) {
+                        $deadPlayers[] = $normalizer->normalize($player, null, [
+                            'groups' => ['gameplayer:read']
+                        ]);
+                    }
+                }
+            }
+
+            return $this->successResponse($deadPlayers);
+
+        } catch (\Throwable $e) {
+            return $this->errorResponse("Erreur lors de la récupération des morts de la première nuit : " . $e->getMessage(), Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
     }
 
-    #[Route('/{id}/reveal', name: 'app_bot_game_reveal', methods: ['POST'])]
-    public function revealPlayer(int $id, Request $request, GameRepository $gameRepository, NormalizerInterface $normalizer,RequestPayloadService $payloadService): JsonResponse {
+    #[Route('/{id}/finish', name: 'app_bot_game_finish', methods: ['POST'])]
+    public function finishGame(int $id, Request $request, GameRepository $gameRepository, NormalizerInterface $normalizer, RequestPayloadService $payloadService): JsonResponse {
         try {
-           
             $game = $gameRepository->find($id);
 
             if (!$game) {
                 return $this->errorResponse("La partie $id n'existe pas.", Response::HTTP_NOT_FOUND);
             }
             
-            $payload = $payloadService->extractValidatedPayload($request, ['discordId']);
-            $discordId = $payload['discordId']; 
+            // On s'attend à recevoir le camp vainqueur depuis le bot
+            $payload = $payloadService->extractValidatedPayload($request, ['winningCamp']);
+            $winningCamp = $payload['winningCamp']; 
 
-            // Délégation au GameService pour la logique métier
-            $this->gameService->revealPlayer($game, $discordId);
+            // Délégation au GameService pour la logique métier (changement de statut, date de fin, etc.)
+            $this->gameService->finishGame($game, $winningCamp);
 
-            // On normalise le log et le joueur pour le retour bot
+            // On normalise la partie pour la renvoyer au bot 
             $gameData = $normalizer->normalize($game, null, [
-                'groups' => ['game:read']
+                'groups' => ['game:read'] 
             ]);
 
             return $this->successResponse($gameData);
@@ -295,7 +358,7 @@ final class GameController extends AbstractBotController
         } catch (\InvalidArgumentException $e) {
             return $this->errorResponse($e->getMessage(), Response::HTTP_BAD_REQUEST);
         } catch (\Throwable $e) {
-            return $this->errorResponse("Erreur lors de l'enregistrement du kill : " . $e->getMessage(), Response::HTTP_INTERNAL_SERVER_ERROR);
+            return $this->errorResponse("Erreur lors de la clôture de la partie : " . $e->getMessage(), Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
 }

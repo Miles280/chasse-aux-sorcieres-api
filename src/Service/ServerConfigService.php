@@ -51,14 +51,11 @@ class ServerConfigService
         if (array_key_exists('spectatorRoleId', $configData)) {
             $serverConfig->setSpectatorRoleId($configData['spectatorRoleId']);
         }
+        if (array_key_exists('invulnerabilityRoleId', $configData)) {
+            $serverConfig->setInvulnerabilityRoleId($configData['invulnerabilityRoleId']);
+        }
         if (array_key_exists('inscriptionVoiceChannelId', $configData)) {
             $serverConfig->setInscriptionVoiceChannelId($configData['inscriptionVoiceChannelId']);
-        }
-        if (array_key_exists('gameVoiceChannelId', $configData)) {
-            $serverConfig->setGameVoiceChannelId($configData['gameVoiceChannelId']);
-        }
-        if (array_key_exists('deadVoiceChannelId', $configData)) {
-            $serverConfig->setDeadVoiceChannelId($configData['deadVoiceChannelId']);
         }
         if (array_key_exists('inscriptionChannelId', $configData)) {
             $serverConfig->setInscriptionChannelId($configData['inscriptionChannelId']);

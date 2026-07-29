@@ -29,6 +29,9 @@ class ServerConfig
     private ?string $spectatorRoleId = null;
 
     #[ORM\Column(length: 50, nullable: true)]
+    private ?string $invulnerabilityRoleId = null;
+
+    #[ORM\Column(length: 50, nullable: true)]
     private ?string $inscriptionVoiceChannelId = null;
 
     #[ORM\Column(length: 50, nullable: true)]
@@ -104,6 +107,18 @@ class ServerConfig
     public function setSpectatorRoleId(?string $spectatorRoleId): static
     {
         $this->spectatorRoleId = $spectatorRoleId;
+
+        return $this;
+    }
+
+    public function getInvulnerabilityRoleId(): ?string
+    {
+        return $this->invulnerabilityRoleId;
+    }
+
+    public function setInvulnerabilityRoleId(?string $invulnerabilityRoleId): static
+    {
+        $this->invulnerabilityRoleId = $invulnerabilityRoleId;
 
         return $this;
     }

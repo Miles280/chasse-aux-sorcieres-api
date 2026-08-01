@@ -87,71 +87,27 @@ class DiscordController extends AbstractController
     #[IsGranted('PUBLIC_ACCESS')]
     public function refresh(Request $request): JsonResponse
     {
-        // 🔥 AMÉLIORÉ : Debug pour identifier le problème
         $refreshToken = $request->cookies->get(self::REFRESH_TOKEN_COOKIE_NAME);
 
         if (!$refreshToken) {
-            return $this->json(['error' => 'Navigateur n\'a pas envoyé le cookie'], 401);
+            return $this->json(['error' => 'Refresh token cookie manquant'], 401);
         }
 
         $user = $this->discordUserManager->findUserByJwtRefreshToken($refreshToken);
 
         if (!$user) {
-            return $this->json(['error' => 'Token reçu mais non trouvé en BDD'], 401);
+            return $this->json(['error' => 'Refresh token invalide'], 401);
         }
 
         if ($user->getJwtRefreshTokenExpiresAt() < new \DateTime()) {
-            return $this->json([
-                'error' => 'Token trouvé mais expiré en BDD',
-                'expires_at' => $user->getJwtRefreshTokenExpiresAt()->format('Y-m-d H:i:s')
-            ], 401);
+            return $this->json(['error' => 'Refresh token expiré'], 401);
         }
 
-        // Debug : Lister tous les cookies reçus
-        $allCookies = $request->cookies->all();
-        
-        if (!$refreshToken) {
-            return $this->json([
-                'error' => 'Cookie refresh token absent',
-                'debug' => [
-                    'cookies_recus' => array_keys($allCookies),
-                    'headers' => [
-                        'origin' => $request->headers->get('Origin'),
-                        'referer' => $request->headers->get('Referer'),
-                    ]
-                ]
-            ], 401);
-        }
-
-        $user = $this->discordUserManager->findUserByJwtRefreshToken($refreshToken);
-
-        if (!$user) {
-            return $this->json([
-                'error' => 'Token inconnu en DB',
-                'debug' => 'Le refresh token ne correspond à aucun utilisateur'
-            ], 401);
-        }
-
-        if ($user->getJwtRefreshTokenExpiresAt() < new \DateTime()) {
-            return $this->json([
-                'error' => 'Token expiré',
-                'debug' => [
-                    'expire_le' => $user->getJwtRefreshTokenExpiresAt()->format('Y-m-d H:i:s'),
-                    'maintenant' => (new \DateTime())->format('Y-m-d H:i:s'),
-                ]
-            ], 401);
-        }
-
-        // Rotation des tokens
         $newJwt = $this->jwtManager->create($user);
         $newRefreshToken = bin2hex(random_bytes(64));
-        
         $this->discordUserManager->updateJwtTokens($user, $newRefreshToken);
 
-        $response = new JsonResponse([
-            'token' => $newJwt
-        ]);
-
+        $response = new JsonResponse(['token' => $newJwt]);
         $this->setRefreshTokenCookie($response, $newRefreshToken, $request);
 
         return $response;

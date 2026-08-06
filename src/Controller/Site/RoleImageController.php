@@ -23,6 +23,12 @@ class RoleImageController extends AbstractController
             return $this->json(['error' => 'No file uploaded'], 400);
         }
 
+        if (!$file->isValid()) {
+            return $this->json([
+                'error' => 'Upload failed: ' . $file->getErrorMessage()
+            ], 400);
+        }
+
         // Validation du type de fichier
         $allowedMimeTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
         if (!in_array($file->getMimeType(), $allowedMimeTypes)) {

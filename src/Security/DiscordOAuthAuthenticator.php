@@ -63,7 +63,7 @@ class DiscordOAuthAuthenticator extends AbstractAuthenticator
             $user->setDiscordAvatar($userResponse['avatar'] ?? null);
         }
 
-        $user->setAccessToken($accessToken);
+        $user->setDiscordAccessToken($accessToken);
         $user->setLastLoginAt(new \DateTime());
         $this->userRepository->save($user, true);
 

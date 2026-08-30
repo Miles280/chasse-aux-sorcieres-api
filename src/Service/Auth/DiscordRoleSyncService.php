@@ -1,4 +1,4 @@
-<?php 
+<?php
 
 namespace App\Service\Auth;
 
@@ -10,7 +10,8 @@ class DiscordRoleSyncService
     public function __construct(
         private DiscordOAuthService $oauth,
         private DiscordGuildService $guild,
-        private EntityManagerInterface $em
+        private EntityManagerInterface $em,
+        private array $roleMapping
     ) {}
 
     public function syncUserRoles(User $user): void
@@ -30,15 +31,9 @@ class DiscordRoleSyncService
         $discordRoles = $member['roles'];
 
         // 3. Mapping
-        $roleMapping = [
-            '1190727880355876985' => 'ROLE_MJ',
-            '1190727880355876986' => 'ROLE_ADMIN',
-            '1190727880355876987' => 'ROLE_ADMIN',
-        ];
-
         $newRoles = ['ROLE_USER'];
 
-        foreach ($roleMapping as $discordRoleId => $symfonyRole) {
+        foreach ($this->roleMapping as $discordRoleId => $symfonyRole) {
             if (in_array($discordRoleId, $discordRoles)) {
                 $newRoles[] = $symfonyRole;
             }

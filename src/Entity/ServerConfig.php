@@ -29,13 +29,10 @@ class ServerConfig
     private ?string $spectatorRoleId = null;
 
     #[ORM\Column(length: 50, nullable: true)]
+    private ?string $invulnerabilityRoleId = null;
+
+    #[ORM\Column(length: 50, nullable: true)]
     private ?string $inscriptionVoiceChannelId = null;
-
-    #[ORM\Column(length: 50, nullable: true)]
-    private ?string $gameVoiceChannelId = null;
-
-    #[ORM\Column(length: 50, nullable: true)]
-    private ?string $deadVoiceChannelId = null;
 
     #[ORM\Column(length: 50, nullable: true)]
     private ?string $inscriptionChannelId = null;
@@ -114,6 +111,18 @@ class ServerConfig
         return $this;
     }
 
+    public function getInvulnerabilityRoleId(): ?string
+    {
+        return $this->invulnerabilityRoleId;
+    }
+
+    public function setInvulnerabilityRoleId(?string $invulnerabilityRoleId): static
+    {
+        $this->invulnerabilityRoleId = $invulnerabilityRoleId;
+
+        return $this;
+    }
+
     public function getInscriptionVoiceChannelId(): ?string
     {
         return $this->inscriptionVoiceChannelId;
@@ -122,30 +131,6 @@ class ServerConfig
     public function setInscriptionVoiceChannelId(?string $inscriptionVoiceChannelId): static
     {
         $this->inscriptionVoiceChannelId = $inscriptionVoiceChannelId;
-
-        return $this;
-    }
-
-        public function getGameVoiceChannelId(): ?string
-    {
-        return $this->gameVoiceChannelId;
-    }
-
-    public function setGameVoiceChannelId(?string $gameVoiceChannelId): static
-    {
-        $this->gameVoiceChannelId = $gameVoiceChannelId;
-
-        return $this;
-    }
-
-    public function getDeadVoiceChannelId(): ?string
-    {
-        return $this->deadVoiceChannelId;
-    }
-
-    public function setDeadVoiceChannelId(?string $deadVoiceChannelId): static
-    {
-        $this->deadVoiceChannelId = $deadVoiceChannelId;
 
         return $this;
     }

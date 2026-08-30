@@ -22,7 +22,7 @@ class Game
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    #[Groups(['game:read'])]
+    #[Groups(['game:read', 'gameplayer:read'])]
     private ?int $id = null;
 
     #[ORM\ManyToOne(inversedBy: 'masteredGames')]
@@ -78,6 +78,10 @@ class Game
     #[Groups(['game:read', 'game:write'])]
     private ?string $mjTrackerMessageId = null;
 
+    #[ORM\Column(type: 'json', nullable: true)]
+    #[Groups(['game:read', 'game:write'])]
+    private ?array $discordChannels = [];
+
     /**
      * @var Collection<int, GamePlayer>
      */
@@ -89,14 +93,12 @@ class Game
      * @var Collection<int, GameLog>
      */
     #[ORM\OneToMany(targetEntity: GameLog::class, mappedBy: 'game', orphanRemoval: true)]
-    #[Groups(['game:read'])]
     private Collection $gameLogs;
 
     /**
      * @var Collection<int, GameComposition>
      */
     #[ORM\OneToMany(targetEntity: GameComposition::class, mappedBy: 'game', orphanRemoval: true)]
-    #[Groups(['game:read'])]
     private Collection $compositions;
 
     public function __construct()
@@ -107,7 +109,7 @@ class Game
 
         $this->createdAt = new \DateTimeImmutable();
         $this->status = GameStatus::WAITING;
-        $this->currentStep = GameStep::DAY;
+        $this->currentStep = GameStep::DUSK;
         $this->dayNumber = 0; 
     }
 
@@ -255,6 +257,17 @@ class Game
     public function setMjTrackerMessageId(?string $mjTrackerMessageId): static
     {
         $this->mjTrackerMessageId = $mjTrackerMessageId;
+        return $this;
+    }
+    
+    public function getDiscordChannels(): ?array
+    {
+        return $this->discordChannels;
+    }
+
+    public function setDiscordChannels(?array $discordChannels): static
+    {
+        $this->discordChannels = $discordChannels;
         return $this;
     }
 

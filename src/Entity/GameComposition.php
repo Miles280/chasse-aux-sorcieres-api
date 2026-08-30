@@ -20,7 +20,7 @@ class GameComposition
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    #[Groups(['composition:read', 'game:read'])]
+    #[Groups(['composition:read'])]
     private ?int $id = null;
 
     #[ORM\ManyToOne(inversedBy: 'compositions')]
@@ -30,7 +30,7 @@ class GameComposition
 
     #[ORM\ManyToOne]
     #[ORM\JoinColumn(nullable: false)]
-    #[Groups(['composition:read', 'composition:write', 'game:read'])]
+    #[Groups(['composition:read', 'composition:write'])]
     private ?Role $role = null;
 
     public function getId(): ?int

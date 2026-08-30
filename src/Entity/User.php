@@ -24,11 +24,11 @@ class User implements UserInterface
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    #[Groups(['user:read'])]
+    #[Groups(['user:read', 'game:read', 'gameplayer:read'])]
     private ?int $id = null;
 
     #[ORM\Column(length: 50)]
-    #[Groups(['user:read', 'user:write'])]
+    #[Groups(['user:read', 'user:write', 'game:read', 'gameplayer:read'])]
     private ?string $discordId = null;
 
     #[ORM\Column(length: 100, nullable: true)]

@@ -50,6 +50,10 @@ class GamePlayer
     #[Groups(['gameplayer:read', 'gameplayer:write'])]
     private ?int $gemsWon = null;
 
+    #[ORM\Column(length: 255, nullable: true)]
+    #[Groups(['game:read', 'gameplayer:read', 'gameplayer:write'])]
+    private ?string $discordChannelId = null;
+
     public function __construct()
     {
         $this->isAlive = true; 
@@ -82,7 +86,7 @@ class GamePlayer
         return $this;
     }
 
-    public function isSpectator(): ?bool
+    public function getIsSpectator(): ?bool
     {
         return $this->isSpectator;
     }
@@ -93,7 +97,7 @@ class GamePlayer
         return $this;
     }
 
-    public function isAlive(): ?bool
+    public function getIsAlive(): ?bool
     {
         return $this->isAlive;
     }
@@ -134,6 +138,17 @@ class GamePlayer
     public function setGemsWon(?int $gemsWon): static
     {
         $this->gemsWon = $gemsWon;
+        return $this;
+    }
+
+    public function getDiscordChannelId(): ?string
+    {
+        return $this->discordChannelId;
+    }
+
+    public function setDiscordChannelId(?string $discordChannelId): static
+    {
+        $this->discordChannelId = $discordChannelId;
         return $this;
     }
 }

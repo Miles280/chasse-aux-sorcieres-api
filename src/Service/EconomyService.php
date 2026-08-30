@@ -2,7 +2,6 @@
 
 namespace App\Service;
 
-use App\Entity\Item;
 use App\Entity\User;
 use App\Entity\Transaction;
 use App\Enum\Currency;

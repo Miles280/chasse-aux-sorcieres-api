@@ -10,7 +10,7 @@ use App\Repository\RoleRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
 
-final class GameCompositionService
+final class CompositionService
 {
     public function __construct(
         private EntityManagerInterface $em,

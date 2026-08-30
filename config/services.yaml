@@ -6,8 +6,8 @@
 parameters:
   discord.role_mapping:
     "%env(DISCORD_ROLE_MJ_ID)%": "ROLE_MJ"
-    "%env(DISCORD_ROLE_ADMIN_ID_1)%": "ROLE_ADMIN"
-    "%env(DISCORD_ROLE_ADMIN_ID_2)%": "ROLE_ADMIN"
+    "%env(DISCORD_ROLE_DEV_ID)%": "ROLE_ADMIN"
+    "%env(DISCORD_ROLE_ADMIN_ID)%": "ROLE_ADMIN"
 
 services:
   # default configuration for services in *this* file

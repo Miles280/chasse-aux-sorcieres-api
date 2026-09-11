@@ -35,7 +35,7 @@ RUN mkdir -p /var/www/html/var && chown -R www-data:www-data /var/www/html/var
 RUN composer install --no-dev --no-interaction --optimize-autoloader
 
 # On remet les bonnes permissions après Composer
-RUN chown -R www-data:www-data /var/www/html/var
+RUN chown -R www-data:www-data /var/www/html/var /var/www/html/public/assets/roles
 
 EXPOSE 80
 CMD ["apache2-foreground"]

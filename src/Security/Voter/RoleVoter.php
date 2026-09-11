@@ -10,7 +10,6 @@ use Symfony\Component\Security\Core\Authorization\Voter\Voter;
 
 class RoleVoter extends Voter
 {
-    // On définit les actions que l'on veut protéger
     public const EDIT = 'ROLE_EDIT';
     public const DELETE = 'ROLE_DELETE';
     public const CREATE = 'ROLE_CREATE';
@@ -37,8 +36,6 @@ class RoleVoter extends Voter
         }
 
         // 2. ACTION CRUCIALE : On synchronise avec Discord MAINTENANT
-        // Cela garantit que si le membre a été banni ou dégradé sur Discord il y a 5 secondes,
-        // ses rôles Symfony ($user->getRoles()) sont à jour.
         try {
             $this->roleSync->syncUserRoles($user);
         } catch (\Exception $e) {
@@ -47,7 +44,6 @@ class RoleVoter extends Voter
         }
 
         // 3. On vérifie les nouveaux rôles synchronisés
-        // Ici, on décide que seuls les ADMIN peuvent toucher aux rôles
-        return in_array('ROLE_ADMIN', $user->getRoles());
+        return in_array('ROLE_ADMIN', $user->getRoles()) || in_array('ROLE_WRITER', $user->getRoles());
     }
 }

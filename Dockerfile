@@ -34,5 +34,8 @@ RUN mkdir -p /var/www/html/var && chown -R www-data:www-data /var/www/html/var
 # Installer les dépendances. Composer va s'exécuter en créant les fichiers directement au bon format
 RUN composer install --no-dev --no-interaction --optimize-autoloader
 
+# On remet les bonnes permissions après Composer
+RUN chown -R www-data:www-data /var/www/html/var
+
 EXPOSE 80
 CMD ["apache2-foreground"]

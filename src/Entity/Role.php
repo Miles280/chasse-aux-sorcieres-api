@@ -28,6 +28,7 @@ use Symfony\Component\Serializer\Annotation\Groups;
     ],
     normalizationContext: ['groups' => ['role:read']],
     denormalizationContext: ['groups' => ['role:write']],
+    paginationEnabled: false,
 )]
 class Role
 {

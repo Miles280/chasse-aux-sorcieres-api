@@ -252,7 +252,7 @@ class GameService
         $this->em->flush();
     }
 
-    public function revealPlayer(Game $game, string $discordId): void
+    public function revealPlayer(Game $game, string $discordId, ?int $fakeRoleId = null): void
     {
         // Trouver le GamePlayer correspondant
         $targetPlayer = null;
@@ -271,8 +271,16 @@ class GameService
             throw new \InvalidArgumentException("Ce joueur est déjà révélé.");
         }
 
-        $targetPlayer->setRevealedRole($targetPlayer->getTrueRole());
-        
+        if ($fakeRoleId !== null) {
+            $fakeRole = $this->roleRepository->find($fakeRoleId);
+            if (!$fakeRole) {
+                throw new \InvalidArgumentException("Le faux rôle spécifié n'existe pas.");
+            }
+            $targetPlayer->setRevealedRole($fakeRole);
+        } else {
+            $targetPlayer->setRevealedRole($targetPlayer->getTrueRole());
+        }
+
         $this->em->persist($targetPlayer);
         $this->em->flush();
     }

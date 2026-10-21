@@ -237,9 +237,14 @@ final class GameController extends AbstractBotController
     }
 
     #[Route('/{id}/reveal', name: 'app_bot_game_reveal', methods: ['POST'])]
-    public function revealPlayer(int $id, Request $request, GameRepository $gameRepository, NormalizerInterface $normalizer,RequestPayloadService $payloadService): JsonResponse {
+    public function revealPlayer(
+        int $id, 
+        Request $request, 
+        GameRepository $gameRepository, 
+        NormalizerInterface $normalizer,
+        RequestPayloadService $payloadService
+    ): JsonResponse {
         try {
-           
             $game = $gameRepository->find($id);
 
             if (!$game) {
@@ -248,9 +253,10 @@ final class GameController extends AbstractBotController
             
             $payload = $payloadService->extractValidatedPayload($request, ['discordId']);
             $discordId = $payload['discordId']; 
+            $fakeRoleId = $payload['fakeRoleId'] ?? null;
 
             // Délégation au GameService pour la logique métier
-            $this->gameService->revealPlayer($game, $discordId);
+            $this->gameService->revealPlayer($game, $discordId, $fakeRoleId);
 
             // On normalise pour le retour bot
             $gameData = $normalizer->normalize($game, null, [
@@ -262,7 +268,7 @@ final class GameController extends AbstractBotController
         } catch (\InvalidArgumentException $e) {
             return $this->errorResponse($e->getMessage(), Response::HTTP_BAD_REQUEST);
         } catch (\Throwable $e) {
-            return $this->errorResponse("Erreur lors de l'enregistrement du kill : " . $e->getMessage(), Response::HTTP_INTERNAL_SERVER_ERROR);
+            return $this->errorResponse("Erreur lors de l'enregistrement du reveal : " . $e->getMessage(), Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
 

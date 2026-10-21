@@ -295,42 +295,54 @@ class EconomyService
     }
 
     /**
-     * Récupère le classement des joueurs selon la monnaie spécifiée (paginé).
+     * Récupère le classement des joueurs présent sur le serveur selon la monnaie spécifiée (paginé).
+     *
+     * @param string[] $allowedDiscordIds Liste des identifiants Discord présents sur le serveur.
      */
-    public function getLeaderboard(string $currency, int $page = 1, int $limit = self::DEFAULT_PAGE_LIMIT): array
-    {
+    public function getLeaderboard(
+        string $currency, 
+        int $page = 1, 
+        array $allowedDiscordIds = [], 
+        int $limit = self::DEFAULT_PAGE_LIMIT
+    ): array {
         $userRepo = $this->em->getRepository(User::class);
 
-        // 1. On compte d'abord le total pour valider la page
-        $countQb = $userRepo->createQueryBuilder('u')->select('count(u.id)');
-        if ($currency === 'gems') {
-            $countQb->where('u.gems > 0');
-        } else {
-            $countQb->where('u.rubies > 0');
+        // 1. Définition du filtre de base
+        $field = ($currency === 'gems') ? 'u.gems' : 'u.rubies';
+
+        // 2. Compte du total filtré
+        $countQb = $userRepo->createQueryBuilder('u')
+            ->select('count(u.id)')
+            ->where("$field > 0");
+
+        if (!empty($allowedDiscordIds)) {
+            $countQb->andWhere('u.discordId IN (:guildMembers)')
+                    ->setParameter('guildMembers', $allowedDiscordIds);
         }
         
         $totalCount = (int) $countQb->getQuery()->getSingleScalarResult();
         $totalPages = (int) max(1, ceil($totalCount / $limit));
 
-        // 2. Ajustement de la page : On s'assure de ne pas dépasser totalPages
-        // Si page = 3 et totalPages = 2, $page devient 2.
+        // 3. Ajustement de la page et calcul de l'offset
         $page = max(1, min($page, $totalPages));
         $offset = ($page - 1) * $limit;
 
-        // 3. Requête principale avec l'offset corrigé
-        $qb = $userRepo->createQueryBuilder('u');
-        if ($currency === 'gems') {
-            $qb->where('u.gems > 0')->orderBy('u.gems', 'DESC');
-        } else {
-            $qb->where('u.rubies > 0')->orderBy('u.rubies', 'DESC');
-        }
+        // 4. Requête principale filtrée
+        $qb = $userRepo->createQueryBuilder('u')
+            ->where("$field > 0")
+            ->orderBy($field, 'DESC')
+            ->setMaxResults($limit)
+            ->setFirstResult($offset);
 
-        $qb->setMaxResults($limit)->setFirstResult($offset);
+        if (!empty($allowedDiscordIds)) {
+            $qb->andWhere('u.discordId IN (:guildMembers)')
+            ->setParameter('guildMembers', $allowedDiscordIds);
+        }
 
         /** @var User[] $users */
         $users = $qb->getQuery()->getResult();
 
-        // 4. Formatage
+        // 5. Formatage
         $formattedUsers = array_map(fn(User $u) => [
             'discordId' => $u->getDiscordId(),
             'gems'      => $u->getGems(),
@@ -340,7 +352,7 @@ class EconomyService
         return [
             'users' => $formattedUsers,
             'pagination' => [
-                'currentPage' => $page, // On renvoie la page ajustée
+                'currentPage' => $page,
                 'totalPages'  => $totalPages,
                 'totalItems'  => $totalCount
             ]

@@ -381,21 +381,24 @@ final class EconomyController extends AbstractBotController
         }
     }
 
-    #[Route('/leaderboard', name: 'app_bot_economy_leaderboard', methods: ['GET'])]
-    public function leaderboard(Request $request): JsonResponse
+    #[Route('/leaderboard', name: 'app_bot_economy_leaderboard', methods: ['POST'])]
+    public function leaderboard(Request $request, RequestPayloadService $payloadService): JsonResponse
     {
         try {
-            // Récupération des paramètres envoyés par le bot
-            $page = max(1, (int) $request->query->get('page', 1));
-            $currency = $request->query->get('currency', 'gems'); // Par défaut on affiche les gemmes
+            // Extraction et validation du payload
+            $payload = $payloadService->extractValidatedPayload($request, ['currency']);
+
+            $page = max(1, (int) ($payload['page'] ?? 1));
+            $currency = $payload['currency'];
+            $memberIds = is_array($payload['memberIds'] ?? null) ? $payload['memberIds'] : [];
 
             // Vérification de la monnaie
             if (!in_array($currency, ['gems', 'rubies'], true)) {
                 throw new EconomyException("Monnaie invalide pour le classement.", Response::HTTP_BAD_REQUEST);
             }
 
-            // Appel au service pour récupérer le classement
-            $leaderboard = $this->economyService->getLeaderboard($currency, $page);
+            // Appel au service
+            $leaderboard = $this->economyService->getLeaderboard($currency, $page, $memberIds);
 
             return $this->successResponse($leaderboard);
 
